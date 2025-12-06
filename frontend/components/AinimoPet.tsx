@@ -187,10 +187,10 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
       }
     };
 
-    // 目線オフセットのスタイル
+    // 目線オフセットのスタイル（ペット全体が微妙に動く）
     const eyeOffsetStyle = {
-      transform: `translate(${targetX * 3}px, ${targetY * 3}px)`,
-      transition: 'transform 0.1s ease-out',
+      transform: `translate(${targetX * 8}px, ${targetY * 5}px)`,
+      transition: 'transform 0.15s ease-out',
     };
 
     return (

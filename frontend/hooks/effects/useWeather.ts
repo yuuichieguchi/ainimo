@@ -21,32 +21,40 @@ const WEATHER_OVERLAY: Record<WeatherType, string> = {
 
 interface UseWeatherOptions {
   initialWeather?: WeatherType;
-  autoChange?: boolean;
-  changeInterval?: number;
+  randomizeOnMount?: boolean;
+}
+
+// 重み付きランダム天気を取得
+function getRandomWeather(): WeatherType {
+  const weathers: WeatherType[] = ['sunny', 'cloudy', 'rainy', 'snowy'];
+  const weights = [0.5, 0.25, 0.15, 0.1]; // 晴れが多め
+
+  const random = Math.random();
+  let cumulative = 0;
+
+  for (let i = 0; i < weathers.length; i++) {
+    cumulative += weights[i];
+    if (random < cumulative) {
+      return weathers[i];
+    }
+  }
+
+  return 'sunny';
 }
 
 export function useWeather(options: UseWeatherOptions = {}) {
-  const { initialWeather = 'sunny', autoChange = false, changeInterval = 300000 } = options;
+  const { initialWeather, randomizeOnMount = true } = options;
 
-  const [weather, setWeather] = useState<WeatherType>(initialWeather);
+  // 初期値：randomizeOnMountがtrueの場合はランダム、そうでなければinitialWeatherまたはsunny
+  const [weather, setWeather] = useState<WeatherType>(() => {
+    if (initialWeather) return initialWeather;
+    if (randomizeOnMount) return getRandomWeather();
+    return 'sunny';
+  });
 
   // 天気をランダムに変更
   const randomizeWeather = useCallback(() => {
-    const weathers: WeatherType[] = ['sunny', 'cloudy', 'rainy', 'snowy'];
-    const weights = [0.5, 0.25, 0.15, 0.1]; // 晴れが多め
-
-    const random = Math.random();
-    let cumulative = 0;
-
-    for (let i = 0; i < weathers.length; i++) {
-      cumulative += weights[i];
-      if (random < cumulative) {
-        setWeather(weathers[i]);
-        return;
-      }
-    }
-
-    setWeather('sunny');
+    setWeather(getRandomWeather());
   }, []);
 
   // パーティクル設定

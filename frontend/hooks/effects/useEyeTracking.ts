@@ -14,8 +14,8 @@ export function useEyeTracking(options: UseEyeTrackingOptions = {}) {
   const {
     enabled = true,
     smoothing = 0.15,
-    maxOffset = 0.3,
-    returnDelay = 2000,
+    maxOffset = 1,
+    returnDelay = 3000,
   } = options;
 
   const [state, setState] = useState<EyeTrackingState>({
@@ -24,24 +24,23 @@ export function useEyeTracking(options: UseEyeTrackingOptions = {}) {
     isTracking: false,
   });
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const returnTimerRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
   const currentRef = useRef({ x: 0, y: 0 });
 
-  // ポインター位置を更新
+  // ポインター位置を更新（ウィンドウ中心からの相対位置）
   const updateTarget = useCallback(
     (clientX: number, clientY: number) => {
-      if (!enabled || !containerRef.current) return;
+      if (!enabled) return;
+      if (typeof window === 'undefined') return;
 
-      const rect = containerRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
 
       // -1 to 1 の範囲に正規化
-      let x = (clientX - centerX) / (rect.width / 2);
-      let y = (clientY - centerY) / (rect.height / 2);
+      let x = (clientX - centerX) / (window.innerWidth / 2);
+      let y = (clientY - centerY) / (window.innerHeight / 2);
 
       // 最大オフセットでクランプ
       x = Math.max(-maxOffset, Math.min(maxOffset, x));
@@ -112,37 +111,10 @@ export function useEyeTracking(options: UseEyeTrackingOptions = {}) {
     };
   }, []);
 
-  // 目の位置をピクセル単位で計算（CSS用）
-  const getEyeOffset = useCallback(
-    (eyeSize: number = 10) => ({
-      transform: `translate(${state.targetX * eyeSize}px, ${state.targetY * eyeSize}px)`,
-    }),
-    [state.targetX, state.targetY]
-  );
-
-  // グローバルマウス追従を有効化
-  const enableGlobalTracking = useCallback(() => {
-    if (!enabled) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      updateTarget(e.clientX, e.clientY);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [enabled, updateTarget]);
-
   return {
-    containerRef,
-    state,
     targetX: state.targetX,
     targetY: state.targetY,
     isTracking: state.isTracking,
     updateTarget,
-    getEyeOffset,
-    enableGlobalTracking,
   };
 }

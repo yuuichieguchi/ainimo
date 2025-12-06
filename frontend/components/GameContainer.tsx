@@ -10,6 +10,7 @@ import { useTimeOfDay, useWeather, useSeason, useFloatingValues } from '@/hooks/
 import { t } from '@/lib/i18n';
 import { ActionType, IntelligenceTier } from '@/types/game';
 import { getIntelligenceTier } from '@/lib/gameEngine';
+import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
@@ -28,7 +29,7 @@ export function GameContainer() {
 
   // 環境エフェクト
   const { timeOfDay } = useTimeOfDay();
-  const { weather, setWeather, weatherIcon } = useWeather({ initialWeather: 'sunny' });
+  const { weather, setWeather, weatherIcon } = useWeather({ randomizeOnMount: true });
   const { season, seasonIcon } = useSeason();
 
   // 浮遊数値エフェクト
@@ -82,36 +83,29 @@ export function GameContainer() {
   }, []);
 
   const handleActionWithScroll = (action: ActionType) => {
-    const prevParams = { ...state.parameters };
+    // エネルギー不足でアクションが実行されない場合は何もしない
+    if (state.parameters.energy < GAME_CONSTANTS.ENERGY_THRESHOLD && action !== 'rest') {
+      handleAction(action);
+      return;
+    }
 
     handleAction(action);
     scrollToPetOnMobile();
 
-    // ステータス変化を表示
-    requestAnimationFrame(() => {
-      const center = getStatusPanelCenter();
-      const changes: Record<string, number> = {};
+    // アクション効果を直接表示（定数から取得）
+    const effects = ACTION_EFFECTS[action];
+    const center = getStatusPanelCenter();
+    const changes: Record<string, number> = {};
 
-      if (state.parameters.xp !== prevParams.xp) {
-        changes.xp = state.parameters.xp - prevParams.xp;
-      }
-      if (state.parameters.intelligence !== prevParams.intelligence) {
-        changes.intelligence = state.parameters.intelligence - prevParams.intelligence;
-      }
-      if (state.parameters.memory !== prevParams.memory) {
-        changes.memory = state.parameters.memory - prevParams.memory;
-      }
-      if (state.parameters.friendliness !== prevParams.friendliness) {
-        changes.friendliness = state.parameters.friendliness - prevParams.friendliness;
-      }
-      if (state.parameters.energy !== prevParams.energy) {
-        changes.energy = state.parameters.energy - prevParams.energy;
-      }
+    if (effects.xp !== 0) changes.xp = effects.xp;
+    if (effects.intelligence !== 0) changes.intelligence = effects.intelligence;
+    if (effects.memory !== 0) changes.memory = effects.memory;
+    if (effects.friendliness !== 0) changes.friendliness = effects.friendliness;
+    if (effects.energy !== 0) changes.energy = effects.energy;
 
-      if (Object.keys(changes).length > 0) {
-        addStatChanges(changes, center.x, center.y);
-      }
-    });
+    if (Object.keys(changes).length > 0) {
+      addStatChanges(changes, center.x, center.y);
+    }
   };
 
   // ペットインタラクション
