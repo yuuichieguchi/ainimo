@@ -20,7 +20,7 @@ export function Tooltip({
   onClick,
 }: TooltipProps) {
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [adjustedStyle, setAdjustedStyle] = useState<{ left?: string; transform?: string }>({});
   const [arrowOffset, setArrowOffset] = useState<string>('50%');
@@ -37,28 +37,28 @@ export function Tooltip({
     if (!isMobile) return;
 
     const calculatePosition = () => {
-      if (isVisible && tooltipRef.current && buttonRef.current) {
+      if (isVisible && tooltipRef.current && triggerRef.current) {
         requestAnimationFrame(() => {
-          if (tooltipRef.current && buttonRef.current) {
+          if (tooltipRef.current && triggerRef.current) {
             const tooltipRect = tooltipRef.current.getBoundingClientRect();
-            const buttonRect = buttonRef.current.getBoundingClientRect();
+            const triggerRect = triggerRef.current.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             const margin = 16;
 
-            const buttonCenter = buttonRect.left + buttonRect.width / 2;
+            const triggerCenter = triggerRect.left + triggerRect.width / 2;
             const tooltipWidth = tooltipRect.width;
-            const idealLeft = buttonCenter - tooltipWidth / 2;
+            const idealLeft = triggerCenter - tooltipWidth / 2;
             const idealRight = idealLeft + tooltipWidth;
 
             if (idealLeft < margin) {
               const offset = margin - idealLeft;
               setAdjustedStyle({ left: '50%', transform: `translateX(calc(-50% + ${offset}px))` });
-              const arrowPos = buttonCenter - margin;
+              const arrowPos = triggerCenter - margin;
               setArrowOffset(`${arrowPos}px`);
             } else if (idealRight > viewportWidth - margin) {
               const offset = idealRight - (viewportWidth - margin);
               setAdjustedStyle({ left: '50%', transform: `translateX(calc(-50% - ${offset}px))` });
-              const arrowPos = buttonCenter - (viewportWidth - margin - tooltipWidth);
+              const arrowPos = triggerCenter - (viewportWidth - margin - tooltipWidth);
               setArrowOffset(`${arrowPos}px`);
             } else {
               setAdjustedStyle({ left: '50%', transform: 'translateX(-50%)' });
@@ -91,19 +91,26 @@ export function Tooltip({
 
   return (
     <div className="relative inline-block">
-      <button
-        ref={buttonRef}
-        type="button"
+      <div
+        ref={triggerRef}
+        role="button"
+        tabIndex={0}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}
         onFocus={onMouseEnter}
         onBlur={onMouseLeave}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
         className="cursor-help inline-flex items-center bg-transparent border-0 p-0 ml-2.5"
         aria-label="詳細情報"
       >
         {children}
-      </button>
+      </div>
 
       {isVisible && isMobile && (
         <div
