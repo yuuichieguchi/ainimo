@@ -27,6 +27,11 @@ export function AinimoPet({ parameters, language, currentActivity }: AinimoPetPr
   };
 
   const getAnimationClass = (): string => {
+    // babyの時は常にバウンス
+    if (tier === 'baby') {
+      return 'animate-[bounce-gentle_2s_ease-in-out_infinite]';
+    }
+
     if (!currentActivity) return '';
 
     switch (currentActivity) {
