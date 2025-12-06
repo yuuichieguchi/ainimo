@@ -9,8 +9,8 @@ import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
 import { useTimeOfDay, useWeather, useSeason, useFloatingValues } from '@/hooks/effects';
 import { t } from '@/lib/i18n';
 import { ActionType, IntelligenceTier } from '@/types/game';
-import { getIntelligenceTier } from '@/lib/gameEngine';
-import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
+import { getIntelligenceTier, canPerformAction } from '@/lib/gameEngine';
+import { ACTION_EFFECTS } from '@/lib/constants';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
@@ -83,13 +83,14 @@ export function GameContainer() {
   }, []);
 
   const handleActionWithScroll = (action: ActionType) => {
-    // エネルギー不足でアクションが実行されない場合は何もしない
-    if (state.parameters.energy < GAME_CONSTANTS.ENERGY_THRESHOLD && action !== 'rest') {
-      handleAction(action);
-      return;
-    }
+    // アクションが実行可能かチェック（canPerformActionを再利用して重複を排除）
+    const canExecute = canPerformAction(state.parameters, action);
 
     handleAction(action);
+
+    // アクションが実行されない場合はスクロールやエフェクトを表示しない
+    if (!canExecute) return;
+
     scrollToPetOnMobile();
 
     // アクション効果を直接表示（定数から取得）

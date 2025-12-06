@@ -28,6 +28,39 @@ export function useEyeTracking(options: UseEyeTrackingOptions = {}) {
   const animationRef = useRef<number | null>(null);
   const targetRef = useRef({ x: 0, y: 0 });
   const currentRef = useRef({ x: 0, y: 0 });
+  const isAnimatingRef = useRef(false);
+
+  // アニメーションループを開始
+  const startAnimation = useCallback(() => {
+    if (isAnimatingRef.current || !enabled) return;
+    isAnimatingRef.current = true;
+
+    const animate = () => {
+      // 線形補間でスムーズに追従
+      currentRef.current.x += (targetRef.current.x - currentRef.current.x) * smoothing;
+      currentRef.current.y += (targetRef.current.y - currentRef.current.y) * smoothing;
+
+      // 十分に近づいたかチェック
+      const dx = Math.abs(targetRef.current.x - currentRef.current.x);
+      const dy = Math.abs(targetRef.current.y - currentRef.current.y);
+
+      if (dx > 0.001 || dy > 0.001) {
+        setState((prev) => ({
+          ...prev,
+          targetX: currentRef.current.x,
+          targetY: currentRef.current.y,
+        }));
+        // まだ目標に到達していないのでループを継続
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        // 目標に到達したのでループを停止（CPU節約）
+        isAnimatingRef.current = false;
+        animationRef.current = null;
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+  }, [enabled, smoothing]);
 
   // ポインター位置を更新（ウィンドウ中心からの相対位置）
   const updateTarget = useCallback(
@@ -53,6 +86,9 @@ export function useEyeTracking(options: UseEyeTrackingOptions = {}) {
         isTracking: true,
       }));
 
+      // アニメーションを開始（停止中の場合のみ）
+      startAnimation();
+
       // 中央に戻るタイマーをリセット
       if (returnTimerRef.current) {
         clearTimeout(returnTimerRef.current);
@@ -60,47 +96,26 @@ export function useEyeTracking(options: UseEyeTrackingOptions = {}) {
 
       returnTimerRef.current = setTimeout(() => {
         targetRef.current = { x: 0, y: 0 };
+        // 中央に戻るアニメーションを開始
+        startAnimation();
         setState((prev) => ({
           ...prev,
           isTracking: false,
         }));
       }, returnDelay);
     },
-    [enabled, maxOffset, returnDelay]
+    [enabled, maxOffset, returnDelay, startAnimation]
   );
 
-  // スムーズなアニメーション
+  // コンポーネントアンマウント時のクリーンアップ
   useEffect(() => {
-    if (!enabled) return;
-
-    const animate = () => {
-      // 線形補間でスムーズに追従
-      currentRef.current.x += (targetRef.current.x - currentRef.current.x) * smoothing;
-      currentRef.current.y += (targetRef.current.y - currentRef.current.y) * smoothing;
-
-      // 十分に近づいたら更新を止める（パフォーマンス最適化）
-      const dx = Math.abs(targetRef.current.x - currentRef.current.x);
-      const dy = Math.abs(targetRef.current.y - currentRef.current.y);
-
-      if (dx > 0.001 || dy > 0.001) {
-        setState((prev) => ({
-          ...prev,
-          targetX: currentRef.current.x,
-          targetY: currentRef.current.y,
-        }));
-      }
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        isAnimatingRef.current = false;
       }
     };
-  }, [enabled, smoothing]);
+  }, []);
 
   // クリーンアップ
   useEffect(() => {
