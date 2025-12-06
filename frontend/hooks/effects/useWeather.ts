@@ -73,7 +73,7 @@ export function useWeather(options: UseWeatherOptions = {}) {
       case 'rainy':
         return '🌧️';
       case 'snowy':
-        return '❄️';
+        return '⛄';
     }
   }, [weather]);
 
