@@ -31,10 +31,15 @@ export function GameContainer() {
     if (typeof window === 'undefined') return;
 
     // モバイルデバイスかチェック (768px未満)
-    if (window.innerWidth < 768 && petRef.current) {
-      petRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
+    if (window.innerWidth < 768) {
+      // 状態更新後のレンダリングを待ってからスクロール
+      requestAnimationFrame(() => {
+        if (petRef.current) {
+          petRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        }
       });
     }
   };

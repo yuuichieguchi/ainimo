@@ -35,7 +35,10 @@ export function useGameState(initialState?: GameState) {
       const decayedState = applyPassiveDecay(prevState);
       const newState = processAction(decayedState, action);
 
-      if (action === 'study' || action === 'play' || action === 'rest') {
+      // アクションが実行された場合のみcurrentActivityをセット
+      const actionExecuted = newState !== decayedState;
+
+      if (actionExecuted && (action === 'study' || action === 'play' || action === 'rest')) {
         return { ...newState, currentActivity: action };
       }
 

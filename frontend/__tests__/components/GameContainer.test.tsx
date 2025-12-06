@@ -112,6 +112,12 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
 
     // Mock scrollIntoView
     Element.prototype.scrollIntoView = jest.fn();
+
+    // Mock requestAnimationFrame
+    jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
   });
 
   afterEach(() => {
