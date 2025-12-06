@@ -11,8 +11,6 @@ interface TooltipProps {
   onClick?: () => void;
 }
 
-type TooltipPosition = 'center' | 'left' | 'right';
-
 export function Tooltip({
   children,
   content,
@@ -22,33 +20,55 @@ export function Tooltip({
   onClick,
 }: TooltipProps) {
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<TooltipPosition>('center');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [adjustedStyle, setAdjustedStyle] = useState<{ left?: string; transform?: string }>({});
+  const [arrowOffset, setArrowOffset] = useState<string>('50%');
   const [isPositioned, setIsPositioned] = useState(false);
 
   useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return;
+
     const calculatePosition = () => {
-      if (isVisible && tooltipRef.current) {
+      if (isVisible && tooltipRef.current && buttonRef.current) {
         requestAnimationFrame(() => {
-          if (tooltipRef.current) {
+          if (tooltipRef.current && buttonRef.current) {
             const tooltipRect = tooltipRef.current.getBoundingClientRect();
+            const buttonRect = buttonRef.current.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
+            const margin = 16;
 
-            const spaceOnLeft = tooltipRect.left;
-            const spaceOnRight = viewportWidth - tooltipRect.right;
+            const buttonCenter = buttonRect.left + buttonRect.width / 2;
+            const tooltipWidth = tooltipRect.width;
+            const idealLeft = buttonCenter - tooltipWidth / 2;
+            const idealRight = idealLeft + tooltipWidth;
 
-            if (spaceOnLeft < 16) {
-              setPosition('left');
-            } else if (spaceOnRight < 16) {
-              setPosition('right');
+            if (idealLeft < margin) {
+              const offset = margin - idealLeft;
+              setAdjustedStyle({ left: '50%', transform: `translateX(calc(-50% + ${offset}px))` });
+              const arrowPos = buttonCenter - margin;
+              setArrowOffset(`${arrowPos}px`);
+            } else if (idealRight > viewportWidth - margin) {
+              const offset = idealRight - (viewportWidth - margin);
+              setAdjustedStyle({ left: '50%', transform: `translateX(calc(-50% - ${offset}px))` });
+              const arrowPos = buttonCenter - (viewportWidth - margin - tooltipWidth);
+              setArrowOffset(`${arrowPos}px`);
             } else {
-              setPosition('center');
+              setAdjustedStyle({ left: '50%', transform: 'translateX(-50%)' });
+              setArrowOffset('50%');
             }
             setIsPositioned(true);
           }
         });
       } else {
         setIsPositioned(false);
-        setPosition('center');
       }
     };
 
@@ -67,33 +87,12 @@ export function Tooltip({
         clearTimeout(timeoutId);
       };
     }
-  }, [isVisible]);
-
-  const getPositionClasses = () => {
-    switch (position) {
-      case 'left':
-        return 'left-0 translate-x-0';
-      case 'right':
-        return 'right-0 translate-x-0';
-      default:
-        return 'left-1/2 -translate-x-1/2';
-    }
-  };
-
-  const getArrowClasses = () => {
-    switch (position) {
-      case 'left':
-        return 'left-4';
-      case 'right':
-        return 'right-4';
-      default:
-        return 'left-1/2 -translate-x-1/2';
-    }
-  };
+  }, [isVisible, isMobile]);
 
   return (
     <div className="relative inline-block">
       <button
+        ref={buttonRef}
         type="button"
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -106,14 +105,29 @@ export function Tooltip({
         {children}
       </button>
 
-      {isVisible && (
+      {isVisible && isMobile && (
         <div
           ref={tooltipRef}
           role="tooltip"
-          className={`absolute z-50 bottom-full ${getPositionClasses()} mb-2 px-4 py-2.5 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg min-w-max max-w-xs whitespace-normal break-words transition-all duration-150 ${isPositioned ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          style={adjustedStyle}
+          className={`absolute z-50 bottom-full mb-2 px-4 py-2.5 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg w-max max-w-[calc(100vw-32px)] whitespace-normal break-words transition-all duration-150 ${isPositioned ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         >
           {content}
-          <div className={`absolute top-full ${getArrowClasses()} border-4 border-transparent border-t-gray-900 dark:border-t-gray-700`} aria-hidden="true" />
+          <div
+            style={{ left: arrowOffset, transform: 'translateX(-50%)' }}
+            className="absolute top-full border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"
+            aria-hidden="true"
+          />
+        </div>
+      )}
+
+      {isVisible && !isMobile && (
+        <div
+          role="tooltip"
+          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2.5 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg min-w-max max-w-xs whitespace-normal break-words"
+        >
+          {content}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" aria-hidden="true" />
         </div>
       )}
     </div>
