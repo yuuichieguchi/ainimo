@@ -1,5 +1,7 @@
 # Ainimo - Virtual AI Pet
 
+[日本語版 README はこちら](./README.ja.md)
+
 A Tamagotchi-style virtual pet web app where you raise an AI that starts very dumb and gradually appears smarter over time.
 
 ## Features
@@ -10,6 +12,7 @@ A Tamagotchi-style virtual pet web app where you raise an AI that starts very du
 - **Persistent State**: Your progress is automatically saved in the browser
 - **Beautiful UI**: Modern, responsive design with Tailwind CSS
 - **Mobile-First**: Works seamlessly on desktop, tablet, and mobile devices
+- **Multilingual Support**: Switch between English and Japanese with automatic language detection
 
 ## Tech Stack
 

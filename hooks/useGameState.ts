@@ -6,6 +6,7 @@ import { getInitialState, processAction, getIntelligenceTier, applyPassiveDecay 
 import { generateResponse } from '@/lib/responseEngine';
 import { GAME_CONSTANTS } from '@/lib/constants';
 import { sanitizeUserInput } from '@/lib/validation';
+import { Language } from './useLanguage';
 
 export function useGameState(initialState?: GameState) {
   const [state, setState] = useState<GameState>(initialState || getInitialState());
@@ -17,7 +18,7 @@ export function useGameState(initialState?: GameState) {
     });
   }, []);
 
-  const handleChat = useCallback((userInput: string) => {
+  const handleChat = useCallback((userInput: string, language: Language) => {
     setState((prevState) => {
       const decayedState = applyPassiveDecay(prevState);
 
@@ -38,7 +39,8 @@ export function useGameState(initialState?: GameState) {
         tier,
         decayedState.parameters.mood,
         decayedState.parameters.memory,
-        recentMessages
+        recentMessages,
+        language
       );
 
       const ainimoMessage: Message = {

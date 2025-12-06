@@ -2,12 +2,15 @@
 
 import { GameParameters } from '@/types/game';
 import { getMoodType, getIntelligenceTier } from '@/lib/gameEngine';
+import { Language } from '@/hooks/useLanguage';
+import { t } from '@/lib/i18n';
 
 interface AinimoPetProps {
   parameters: GameParameters;
+  language: Language;
 }
 
-export function AinimoPet({ parameters }: AinimoPetProps) {
+export function AinimoPet({ parameters, language }: AinimoPetProps) {
   const mood = getMoodType(parameters.mood);
   const tier = getIntelligenceTier(parameters.intelligence);
 
@@ -75,13 +78,13 @@ export function AinimoPet({ parameters }: AinimoPetProps) {
   const getTierLabel = (): string => {
     switch (tier) {
       case 'baby':
-        return 'Baby';
+        return t('tierBaby', language);
       case 'child':
-        return 'Child';
+        return t('tierChild', language);
       case 'teen':
-        return 'Teen';
+        return t('tierTeen', language);
       case 'adult':
-        return 'Adult';
+        return t('tierAdult', language);
       default:
         return 'Unknown';
     }
@@ -93,7 +96,7 @@ export function AinimoPet({ parameters }: AinimoPetProps) {
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Ainimo</h2>
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Level {parameters.level} {getTierLabel()}
+          {t('level', language)} {parameters.level} {getTierLabel()}
         </p>
       </div>
     </div>

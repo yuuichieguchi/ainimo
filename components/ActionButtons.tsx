@@ -1,20 +1,23 @@
 'use client';
 
 import { ActionType } from '@/types/game';
+import { Language } from '@/hooks/useLanguage';
+import { t } from '@/lib/i18n';
 
 interface ActionButtonsProps {
   onAction: (action: ActionType) => void;
   energy: number;
   disabled?: boolean;
+  language: Language;
 }
 
-export function ActionButtons({ onAction, energy, disabled = false }: ActionButtonsProps) {
+export function ActionButtons({ onAction, energy, disabled = false, language }: ActionButtonsProps) {
   const isLowEnergy = energy < 20;
 
   const buttons: Array<{ action: ActionType; label: string; icon: string; color: string }> = [
-    { action: 'study', label: 'Study', icon: '📚', color: 'bg-purple-500 hover:bg-purple-600' },
-    { action: 'play', label: 'Play', icon: '🎮', color: 'bg-green-500 hover:bg-green-600' },
-    { action: 'rest', label: 'Rest', icon: '😴', color: 'bg-blue-500 hover:bg-blue-600' },
+    { action: 'study', label: t('study', language), icon: '📚', color: 'bg-purple-500 hover:bg-purple-600' },
+    { action: 'play', label: t('play', language), icon: '🎮', color: 'bg-green-500 hover:bg-green-600' },
+    { action: 'rest', label: t('rest', language), icon: '😴', color: 'bg-blue-500 hover:bg-blue-600' },
   ];
 
   return (
@@ -32,7 +35,7 @@ export function ActionButtons({ onAction, energy, disabled = false }: ActionButt
               transition-all duration-200 transform
               ${isDisabled ? 'bg-gray-400 cursor-not-allowed opacity-50' : `${color} hover:scale-105 active:scale-95`}
             `}
-            title={isDisabled && action !== 'rest' ? 'Not enough energy! Let Ainimo rest.' : undefined}
+            title={isDisabled && action !== 'rest' ? t('notEnoughEnergy', language) : undefined}
           >
             <span className="text-3xl">{icon}</span>
             <span className="text-sm">{label}</span>

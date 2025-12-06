@@ -2,12 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 import { Message } from '@/types/game';
+import { Language } from '@/hooks/useLanguage';
+import { t } from '@/lib/i18n';
 
 interface ChatLogProps {
   messages: Message[];
+  language: Language;
 }
 
-export function ChatLog({ messages }: ChatLogProps) {
+export function ChatLog({ messages, language }: ChatLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,7 +25,7 @@ export function ChatLog({ messages }: ChatLogProps) {
     return (
       <div className="h-80 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
         <p className="text-gray-400 dark:text-gray-500 text-center">
-          No messages yet. Start chatting with Ainimo!
+          {t('noMessages', language)}
         </p>
       </div>
     );
