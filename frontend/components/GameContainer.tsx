@@ -78,20 +78,20 @@ export function GameContainer() {
               </h3>
               <ChatLog messages={state.messages} language={language} />
 
-              <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
+              <form onSubmit={handleSendMessage} className="mt-4 flex">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder={t('typeMessage', language)}
                   maxLength={500}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 mr-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={state.parameters.energy < 20}
                 />
                 <button
                   type="submit"
                   disabled={!chatInput.trim() || state.parameters.energy < 20}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="flex-shrink-0 px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {t('send', language)}
                 </button>
