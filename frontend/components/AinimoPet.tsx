@@ -1,15 +1,25 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useEffect, useRef, useCallback, useState } from 'react';
 import { GameParameters, ActionType, IntelligenceTier } from '@/types/game';
 import { getMoodType, getIntelligenceTier } from '@/lib/gameEngine';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
+import {
+  useParticles,
+  useInteraction,
+  useMoodFilter,
+  useEmote,
+  useEyeTracking,
+} from '@/hooks/effects';
+import { ParticleCanvas, EmoteBubble } from '@/components/effects';
 
 interface AinimoPetProps {
   parameters: GameParameters;
   language: Language;
   currentActivity?: ActionType | null;
+  previousTier?: IntelligenceTier | null;
+  onInteraction?: (type: 'tap' | 'pet') => void;
 }
 
 const IMAGE_PATHS: Record<IntelligenceTier, string> = {
@@ -20,15 +30,126 @@ const IMAGE_PATHS: Record<IntelligenceTier, string> = {
 };
 
 export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
-  ({ parameters, language, currentActivity }, ref) => {
+  ({ parameters, language, currentActivity, previousTier, onInteraction }, ref) => {
     const mood = getMoodType(parameters.mood);
     const tier = getIntelligenceTier(parameters.intelligence);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // 成長アニメーション状態
+    const [isGrowing, setIsGrowing] = useState(false);
+
+    // エフェクトフック
+    const { particles, emitForAction, emit } = useParticles({ enabled: true });
+    const { filterObject, glowClass } = useMoodFilter({ mood: parameters.mood });
+    const { activeEmote, isVisible, showEmote, showActionEmote } = useEmote();
+    const { targetX, targetY, updateTarget } = useEyeTracking();
+
+    // コンテナの中心座標を取得
+    const getContainerCenter = useCallback(() => {
+      if (!containerRef.current) return { x: 64, y: 64 };
+      const rect = containerRef.current.getBoundingClientRect();
+      return {
+        x: rect.width / 2,
+        y: rect.height / 2,
+      };
+    }, []);
+
+    // タップハンドラー
+    const handleTap = useCallback(
+      (clientX: number, clientY: number) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        emitForAction('tap', x, y);
+        showEmote('heart', 1000);
+        onInteraction?.('tap');
+      },
+      [emitForAction, showEmote, onInteraction]
+    );
+
+    // 長押し（撫でる）ハンドラー
+    const handleLongPress = useCallback(
+      (clientX: number, clientY: number) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        emitForAction('pet', x, y);
+        showEmote('heart', 1500);
+        onInteraction?.('pet');
+      },
+      [emitForAction, showEmote, onInteraction]
+    );
+
+    // ドラッグ（目線追従）ハンドラー
+    const handleDrag = useCallback(
+      (clientX: number, clientY: number) => {
+        updateTarget(clientX, clientY);
+      },
+      [updateTarget]
+    );
+
+    const { handlers, isPetting } = useInteraction({
+      onTap: handleTap,
+      onLongPress: handleLongPress,
+      onDrag: handleDrag,
+      enabled: true,
+    });
+
+    // アクティビティ変化時のエフェクト
+    useEffect(() => {
+      if (currentActivity) {
+        const center = getContainerCenter();
+        emitForAction(currentActivity, center.x, center.y);
+        showActionEmote(currentActivity);
+      }
+    }, [currentActivity, emitForAction, showActionEmote, getContainerCenter]);
+
+    // 成長時のエフェクト
+    useEffect(() => {
+      if (previousTier && previousTier !== tier) {
+        setIsGrowing(true);
+        const center = getContainerCenter();
+
+        // 成長パーティクル
+        emit({ type: 'sparkle', x: center.x, y: center.y, count: 15, spread: 80 });
+        emit({ type: 'star', x: center.x, y: center.y, count: 10, spread: 60 });
+        showEmote('sparkle', 2000);
+
+        // アニメーション終了後にリセット
+        const timer = setTimeout(() => setIsGrowing(false), 800);
+        return () => clearTimeout(timer);
+      }
+    }, [tier, previousTier, emit, showEmote, getContainerCenter]);
+
+    // グローバルマウス追従（目線）
+    useEffect(() => {
+      const handleMouseMove = (e: MouseEvent) => {
+        updateTarget(e.clientX, e.clientY);
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, [updateTarget]);
 
     const getImagePath = (): string => {
       return IMAGE_PATHS[tier];
     };
 
     const getAnimationClass = (): string => {
+      // 成長中
+      if (isGrowing) {
+        return 'animate-growth-pop';
+      }
+
+      // 撫でられ中
+      if (isPetting) {
+        return 'animate-petting';
+      }
+
       // アクティビティがある時は各アクションのアニメーションを優先
       if (currentActivity) {
         switch (currentActivity) {
@@ -66,26 +187,55 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
       }
     };
 
+    // 目線オフセットのスタイル
+    const eyeOffsetStyle = {
+      transform: `translate(${targetX * 3}px, ${targetY * 3}px)`,
+      transition: 'transform 0.1s ease-out',
+    };
+
     return (
-      <div ref={ref} className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg">
-      <div className={`w-32 h-32 ${getAnimationClass()}`}>
-        <img
-          src={getImagePath()}
-          alt={`Ainimo ${getTierLabel()}`}
-          // ダークモード時：白い目と口が暗い背景に溶け込まないよう縁取りを追加
-          className="w-full h-full object-contain dark:[filter:drop-shadow(0_0_2px_rgba(0,0,0,1))_drop-shadow(0_0_4px_rgba(0,0,0,0.8))]"
-          onError={(e) => {
-            e.currentTarget.src = IMAGE_PATHS.baby;
-          }}
-        />
+      <div
+        ref={ref}
+        className={`
+          flex flex-col items-center gap-4 p-6
+          bg-gradient-to-br from-blue-50 to-purple-50
+          dark:from-gray-800 dark:to-gray-700
+          rounded-2xl shadow-lg
+          transition-all duration-300
+          ${glowClass ? `shadow-xl ${glowClass}` : ''}
+        `}
+      >
+        <div
+          ref={containerRef}
+          className={`relative w-32 h-32 select-none touch-none ${getAnimationClass()}`}
+          {...handlers}
+        >
+          {/* ペット画像 */}
+          <div style={eyeOffsetStyle}>
+            <img
+              src={getImagePath()}
+              alt={`Ainimo ${getTierLabel()}`}
+              className="w-full h-full object-contain dark:[filter:drop-shadow(0_0_2px_rgba(0,0,0,1))_drop-shadow(0_0_4px_rgba(0,0,0,0.8))]"
+              style={filterObject}
+              draggable={false}
+              onError={(e) => {
+                e.currentTarget.src = IMAGE_PATHS.baby;
+              }}
+            />
+          </div>
+
+          {/* パーティクル */}
+          <ParticleCanvas particles={particles} />
+
+          {/* エモート */}
+          <EmoteBubble emote={activeEmote} isVisible={isVisible} position="top-right" />
+        </div>
+
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Ainimo</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{getTierLabel()}</p>
+        </div>
       </div>
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Ainimo</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          {getTierLabel()}
-        </p>
-      </div>
-    </div>
     );
   }
 );

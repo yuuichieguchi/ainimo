@@ -1,18 +1,21 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { usePersistence } from '@/hooks/usePersistence';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
+import { useTimeOfDay, useWeather, useSeason, useFloatingValues } from '@/hooks/effects';
 import { t } from '@/lib/i18n';
-import { ActionType } from '@/types/game';
+import { ActionType, IntelligenceTier } from '@/types/game';
+import { getIntelligenceTier } from '@/lib/gameEngine';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
 import { ActionButtons } from './ActionButtons';
 import { LevelUpNotification } from './LevelUpNotification';
+import { EnvironmentLayer, FloatingValues } from './effects';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
@@ -23,16 +26,40 @@ export function GameContainer() {
   const { theme, toggleTheme } = useDarkMode();
   const { notificationState, isLevelUpRecent, hideNotification } = useLevelUpNotification(state.parameters.level);
 
+  // 環境エフェクト
+  const { timeOfDay } = useTimeOfDay();
+  const { weather, setWeather, weatherIcon } = useWeather({ initialWeather: 'sunny' });
+  const { season, seasonIcon } = useSeason();
+
+  // 浮遊数値エフェクト
+  const { values: floatingValues, addStatChanges } = useFloatingValues();
+
+  // 成長追跡
+  const [previousTier, setPreviousTier] = useState<IntelligenceTier | null>(null);
+  const prevIntelligenceRef = useRef(state.parameters.intelligence);
+
   const [chatInput, setChatInput] = useState('');
   const petRef = useRef<HTMLDivElement>(null);
+  const statusPanelRef = useRef<HTMLDivElement>(null);
+
+  // 成長検出
+  useEffect(() => {
+    const currentTier = getIntelligenceTier(state.parameters.intelligence);
+    const prevTier = getIntelligenceTier(prevIntelligenceRef.current);
+
+    if (currentTier !== prevTier) {
+      setPreviousTier(prevTier);
+      const timer = setTimeout(() => setPreviousTier(null), 1000);
+      return () => clearTimeout(timer);
+    }
+
+    prevIntelligenceRef.current = state.parameters.intelligence;
+  }, [state.parameters.intelligence]);
 
   const scrollToPetOnMobile = () => {
-    // SSR環境でwindowが存在しない場合は早期リターン
     if (typeof window === 'undefined') return;
 
-    // モバイルデバイスかチェック (768px未満)
     if (window.innerWidth < 768) {
-      // 状態更新後のレンダリングを待ってからスクロール
       requestAnimationFrame(() => {
         if (petRef.current) {
           petRef.current.scrollIntoView({
@@ -44,10 +71,61 @@ export function GameContainer() {
     }
   };
 
+  // ステータスパネルの中心座標を取得
+  const getStatusPanelCenter = useCallback(() => {
+    if (!statusPanelRef.current) return { x: 200, y: 100 };
+    const rect = statusPanelRef.current.getBoundingClientRect();
+    return {
+      x: rect.width / 2,
+      y: rect.height / 2,
+    };
+  }, []);
+
   const handleActionWithScroll = (action: ActionType) => {
+    const prevParams = { ...state.parameters };
+
     handleAction(action);
     scrollToPetOnMobile();
+
+    // ステータス変化を表示
+    requestAnimationFrame(() => {
+      const center = getStatusPanelCenter();
+      const changes: Record<string, number> = {};
+
+      if (state.parameters.xp !== prevParams.xp) {
+        changes.xp = state.parameters.xp - prevParams.xp;
+      }
+      if (state.parameters.intelligence !== prevParams.intelligence) {
+        changes.intelligence = state.parameters.intelligence - prevParams.intelligence;
+      }
+      if (state.parameters.memory !== prevParams.memory) {
+        changes.memory = state.parameters.memory - prevParams.memory;
+      }
+      if (state.parameters.friendliness !== prevParams.friendliness) {
+        changes.friendliness = state.parameters.friendliness - prevParams.friendliness;
+      }
+      if (state.parameters.energy !== prevParams.energy) {
+        changes.energy = state.parameters.energy - prevParams.energy;
+      }
+
+      if (Object.keys(changes).length > 0) {
+        addStatChanges(changes, center.x, center.y);
+      }
+    });
   };
+
+  // ペットインタラクション
+  const handlePetInteraction = useCallback(() => {
+    // 将来的にインタラクションによるボーナスを追加可能
+  }, []);
+
+  // 天気変更ハンドラー
+  const cycleWeather = useCallback(() => {
+    const weathers: Array<'sunny' | 'cloudy' | 'rainy' | 'snowy'> = ['sunny', 'cloudy', 'rainy', 'snowy'];
+    const currentIndex = weathers.indexOf(weather);
+    const nextIndex = (currentIndex + 1) % weathers.length;
+    setWeather(weathers[nextIndex]);
+  }, [weather, setWeather]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,18 +147,21 @@ export function GameContainer() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4">
+    <EnvironmentLayer
+      timeOfDay={timeOfDay}
+      weather={weather}
+      season={season}
+      className="min-h-screen py-8 px-4"
+    >
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="text-center">
           <div className="mb-4 flex justify-center">
-            {/* Light mode logo */}
             <img
               src="/logo_light_mode.png"
               alt="Ainimo"
               className="h-20 w-auto dark:hidden"
               style={{ imageRendering: 'crisp-edges' }}
             />
-            {/* Dark mode logo */}
             <img
               src="/logo_dark_mode.png"
               alt="Ainimo"
@@ -91,11 +172,29 @@ export function GameContainer() {
           <p className="text-gray-600 dark:text-gray-300">
             {t('appSubtitle', language)}
           </p>
+          {/* 環境インジケーター */}
+          <div className="mt-2 flex justify-center gap-2 text-lg">
+            <button
+              onClick={cycleWeather}
+              className="hover:scale-110 transition-transform cursor-pointer"
+              title={`Weather: ${weather}`}
+            >
+              {weatherIcon}
+            </button>
+            <span title={`Season: ${season}`}>{seasonIcon}</span>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <AinimoPet ref={petRef} parameters={state.parameters} language={language} currentActivity={state.currentActivity} />
+            <AinimoPet
+              ref={petRef}
+              parameters={state.parameters}
+              language={language}
+              currentActivity={state.currentActivity}
+              previousTier={previousTier}
+              onInteraction={handlePetInteraction}
+            />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -132,11 +231,14 @@ export function GameContainer() {
           </div>
 
           <div className="space-y-6">
-            <StatusPanel
-              parameters={state.parameters}
-              language={language}
-              isLevelUpRecent={isLevelUpRecent}
-            />
+            <div ref={statusPanelRef} className="relative">
+              <StatusPanel
+                parameters={state.parameters}
+                language={language}
+                isLevelUpRecent={isLevelUpRecent}
+              />
+              <FloatingValues values={floatingValues} />
+            </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -180,6 +282,6 @@ export function GameContainer() {
         language={language}
         onClose={hideNotification}
       />
-    </div>
+    </EnvironmentLayer>
   );
 }

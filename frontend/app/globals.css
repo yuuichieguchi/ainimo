@@ -79,3 +79,245 @@ body {
 .animate-rest {
   animation: rest 2s ease-in-out infinite;
 }
+
+/* ==================== エフェクトアニメーション ==================== */
+
+/* 浮遊数値アニメーション */
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.8);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 1.5s ease-out forwards;
+}
+
+/* エモートバウンスアニメーション */
+@keyframes emote-bounce {
+  0% {
+    transform: scale(0) translateY(10px);
+  }
+  50% {
+    transform: scale(1.2) translateY(-5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 成長ポップアニメーション */
+@keyframes growth-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  70% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-growth-pop {
+  animation: growth-pop 0.8s ease-out;
+}
+
+/* タップバウンスアニメーション */
+@keyframes tap-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-tap-bounce {
+  animation: tap-bounce 0.2s ease-out;
+}
+
+/* 撫でられているときの揺れ */
+@keyframes petting-wiggle {
+  0%, 100% {
+    transform: rotate(0deg) scale(1.05);
+  }
+  25% {
+    transform: rotate(-3deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(3deg) scale(1.05);
+  }
+}
+
+.animate-petting {
+  animation: petting-wiggle 0.5s ease-in-out infinite;
+}
+
+/* きらきらパルスアニメーション */
+@keyframes sparkle-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle-pulse 1s ease-in-out infinite;
+}
+
+/* スライドイン（上から） */
+@keyframes slide-in-top {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.3s ease-out;
+}
+
+/* フェードイン・スケールアップ */
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.3s ease-out;
+}
+
+/* 心臓の鼓動 */
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1s ease-in-out infinite;
+}
+
+/* 雨粒落下 */
+@keyframes raindrop-fall {
+  0% {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+}
+
+/* 雪ひらひら */
+@keyframes snowflake-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateY(100px) rotate(360deg);
+  }
+}
+
+/* 桜の花びら舞う */
+@keyframes petal-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateY(80px) translateX(30px) rotate(180deg);
+  }
+}
+
+/* 紅葉ひらひら */
+@keyframes leaf-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(40px) translateX(-20px) rotate(90deg);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateY(80px) translateX(20px) rotate(180deg);
+  }
+}
+
+/* GPU最適化ユーティリティ */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* prefers-reduced-motion対応 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-up,
+  .animate-growth-pop,
+  .animate-tap-bounce,
+  .animate-petting,
+  .animate-sparkle,
+  .animate-heartbeat,
+  .animate-study,
+  .animate-play,
+  .animate-rest {
+    animation: none !important;
+  }
+}

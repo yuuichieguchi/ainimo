@@ -16,6 +16,20 @@ jest.mock('@/hooks/useDarkMode');
 jest.mock('@/hooks/useLanguage');
 jest.mock('@/hooks/useLevelUpNotification');
 
+// Mock effect hooks
+jest.mock('@/hooks/effects', () => ({
+  useTimeOfDay: () => ({ timeOfDay: 'day' }),
+  useWeather: () => ({ weather: 'sunny', setWeather: jest.fn(), weatherIcon: '☀️' }),
+  useSeason: () => ({ season: 'spring', seasonIcon: '🌸' }),
+  useFloatingValues: () => ({ values: [], addStatChanges: jest.fn() }),
+}));
+
+// Mock effect components
+jest.mock('@/components/effects', () => ({
+  EnvironmentLayer: ({ children }: { children: React.ReactNode }) => <div data-testid="environment-layer">{children}</div>,
+  FloatingValues: () => <div data-testid="floating-values" />,
+}));
+
 // Mock components
 jest.mock('@/components/AinimoPet', () => ({
   AinimoPet: React.forwardRef((props: any, ref: React.Ref<HTMLDivElement>) => (
