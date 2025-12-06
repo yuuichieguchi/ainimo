@@ -53,7 +53,7 @@ export const translations = {
     level: "レベル",
     tierBaby: "赤ちゃん",
     tierChild: "子供",
-    tierTeen: "少年",
+    tierTeen: "若者",
     tierAdult: "大人",
     status: "ステータス",
     xp: "経験値",
