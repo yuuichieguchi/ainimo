@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Ainimo - Raise Your Virtual AI Pet",
   description:
     "A Tamagotchi-style virtual pet where you raise an AI from dumb to smart",
+  verification: {
+    google: "qDjNwUaLfOwddmNI75rPqLANJJNBCRsKXySsNayn_ZI",
+  },
 };
 
 export default function RootLayout({
