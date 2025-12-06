@@ -1,5 +1,14 @@
-import { GameState, GameParameters, ActionType, IntelligenceTier, MoodType } from '@/types/game';
+import { GameState, GameParameters, ActionType, IntelligenceTier, MoodType, RestLimitState } from '@/types/game';
 import { GAME_CONSTANTS, ACTION_EFFECTS, INTELLIGENCE_THRESHOLDS } from './constants';
+
+// 今日の日付をYYYY-MM-DD形式で取得（ローカルタイム基準）
+export function getTodayDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 export function getInitialState(): GameState {
   return {
@@ -15,6 +24,10 @@ export function getInitialState(): GameState {
     messages: [],
     createdAt: Date.now(),
     lastActionTime: Date.now(),
+    restLimit: {
+      count: 0,
+      lastResetDate: getTodayDateString(),
+    },
   };
 }
 
@@ -83,8 +96,37 @@ export function updateParameters(
   return updated;
 }
 
-export function canPerformAction(parameters: GameParameters, action: ActionType): boolean {
-  if (action === 'rest') return true;
+// 今日の残り休憩回数を取得
+export function getRemainingRestCount(restLimit: RestLimitState): number {
+  const currentDate = getTodayDateString();
+  const effectiveCount = restLimit.lastResetDate === currentDate ? restLimit.count : 0;
+  return GAME_CONSTANTS.MAX_REST_PER_DAY - effectiveCount;
+}
+
+// 休憩回数を更新（日付リセット含む）
+export function updateRestLimit(restLimit: RestLimitState): RestLimitState {
+  const currentDate = getTodayDateString();
+
+  if (restLimit.lastResetDate !== currentDate) {
+    // 日付が変わっていたらリセットして1回目
+    return { count: 1, lastResetDate: currentDate };
+  }
+
+  return {
+    count: restLimit.count + 1,
+    lastResetDate: currentDate
+  };
+}
+
+export function canPerformAction(
+  parameters: GameParameters,
+  action: ActionType,
+  restLimit?: RestLimitState
+): boolean {
+  if (action === 'rest') {
+    if (!restLimit) return true;
+    return getRemainingRestCount(restLimit) > 0;
+  }
   return parameters.energy >= GAME_CONSTANTS.ENERGY_THRESHOLD;
 }
 
@@ -92,32 +134,44 @@ export function processAction(
   state: GameState,
   action: ActionType
 ): GameState {
-  if (!canPerformAction(state.parameters, action)) {
+  if (!canPerformAction(state.parameters, action, state.restLimit)) {
     return state;
   }
 
   const newParameters = updateParameters(state.parameters, action);
 
+  // 休憩の場合は restLimit を更新
+  const newRestLimit = action === 'rest'
+    ? updateRestLimit(state.restLimit)
+    : state.restLimit;
+
   return {
     ...state,
     parameters: newParameters,
     lastActionTime: Date.now(),
+    restLimit: newRestLimit,
   };
 }
 
 export function applyPassiveDecay(state: GameState): GameState {
   const now = Date.now();
-  const hoursSinceLastAction = (now - state.lastActionTime) / (1000 * 60 * 60);
+  const minutesSinceLastAction = (now - state.lastActionTime) / (1000 * 60);
 
-  if (hoursSinceLastAction < 1) {
+  // 30分未満は何もしない
+  if (minutesSinceLastAction < GAME_CONSTANTS.DECAY_THRESHOLD_MINUTES) {
     return state;
   }
 
-  const decayAmount = Math.min(20, Math.floor(hoursSinceLastAction));
+  // 30分ごとに -1 (上限 -50)
+  const intervals = Math.floor(minutesSinceLastAction / GAME_CONSTANTS.DECAY_THRESHOLD_MINUTES);
+  const decayAmount = Math.min(
+    GAME_CONSTANTS.DECAY_MAX_PENALTY,
+    intervals * GAME_CONSTANTS.DECAY_PENALTY_PER_INTERVAL
+  );
 
   const newParameters: GameParameters = {
     ...state.parameters,
-    energy: clampStat(state.parameters.energy - decayAmount),
+    // energy は減らさない（friendlinessのみ）
     friendliness: clampStat(state.parameters.friendliness - decayAmount),
   };
 

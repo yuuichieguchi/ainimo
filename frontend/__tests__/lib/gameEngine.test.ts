@@ -8,8 +8,13 @@ import {
   updateParameters,
   canPerformAction,
   getInitialState,
+  getTodayDateString,
+  getRemainingRestCount,
+  updateRestLimit,
+  processAction,
+  applyPassiveDecay,
 } from '@/lib/gameEngine';
-import { GameParameters } from '@/types/game';
+import { GameParameters, RestLimitState, GameState } from '@/types/game';
 
 describe('gameEngine', () => {
   describe('clampStat', () => {
@@ -250,6 +255,184 @@ describe('gameEngine', () => {
       expect(state.messages).toEqual([]);
       expect(state.createdAt).toBeGreaterThan(0);
       expect(state.lastActionTime).toBeGreaterThan(0);
+    });
+
+    it('should include restLimit with initial values', () => {
+      const state = getInitialState();
+
+      expect(state.restLimit).toBeDefined();
+      expect(state.restLimit.count).toBe(0);
+      expect(state.restLimit.lastResetDate).toBe(getTodayDateString());
+    });
+  });
+
+  describe('getTodayDateString', () => {
+    it('should return date in YYYY-MM-DD format', () => {
+      const dateString = getTodayDateString();
+      expect(dateString).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe('getRemainingRestCount', () => {
+    it('should return 3 when count is 0 and date is today', () => {
+      const restLimit: RestLimitState = {
+        count: 0,
+        lastResetDate: getTodayDateString(),
+      };
+      expect(getRemainingRestCount(restLimit)).toBe(3);
+    });
+
+    it('should return remaining count correctly', () => {
+      const restLimit: RestLimitState = {
+        count: 2,
+        lastResetDate: getTodayDateString(),
+      };
+      expect(getRemainingRestCount(restLimit)).toBe(1);
+    });
+
+    it('should return 0 when all rests are used', () => {
+      const restLimit: RestLimitState = {
+        count: 3,
+        lastResetDate: getTodayDateString(),
+      };
+      expect(getRemainingRestCount(restLimit)).toBe(0);
+    });
+
+    it('should return 3 when date is different (reset)', () => {
+      const restLimit: RestLimitState = {
+        count: 3,
+        lastResetDate: '2020-01-01',
+      };
+      expect(getRemainingRestCount(restLimit)).toBe(3);
+    });
+  });
+
+  describe('updateRestLimit', () => {
+    it('should increment count when date is same', () => {
+      const restLimit: RestLimitState = {
+        count: 1,
+        lastResetDate: getTodayDateString(),
+      };
+      const updated = updateRestLimit(restLimit);
+      expect(updated.count).toBe(2);
+      expect(updated.lastResetDate).toBe(getTodayDateString());
+    });
+
+    it('should reset count to 1 when date is different', () => {
+      const restLimit: RestLimitState = {
+        count: 3,
+        lastResetDate: '2020-01-01',
+      };
+      const updated = updateRestLimit(restLimit);
+      expect(updated.count).toBe(1);
+      expect(updated.lastResetDate).toBe(getTodayDateString());
+    });
+  });
+
+  describe('canPerformAction with restLimit', () => {
+    const baseParams: GameParameters = {
+      level: 1,
+      xp: 0,
+      intelligence: 10,
+      memory: 5,
+      friendliness: 50,
+      energy: 100,
+      mood: 60,
+    };
+
+    it('should allow rest when remaining count > 0', () => {
+      const restLimit: RestLimitState = {
+        count: 2,
+        lastResetDate: getTodayDateString(),
+      };
+      expect(canPerformAction(baseParams, 'rest', restLimit)).toBe(true);
+    });
+
+    it('should block rest when remaining count is 0', () => {
+      const restLimit: RestLimitState = {
+        count: 3,
+        lastResetDate: getTodayDateString(),
+      };
+      expect(canPerformAction(baseParams, 'rest', restLimit)).toBe(false);
+    });
+
+    it('should allow rest after date change even if count was 3', () => {
+      const restLimit: RestLimitState = {
+        count: 3,
+        lastResetDate: '2020-01-01',
+      };
+      expect(canPerformAction(baseParams, 'rest', restLimit)).toBe(true);
+    });
+  });
+
+  describe('processAction with rest limit', () => {
+    it('should update restLimit when resting', () => {
+      const state = getInitialState();
+      const newState = processAction(state, 'rest');
+
+      expect(newState.restLimit.count).toBe(1);
+    });
+
+    it('should not allow rest when limit reached', () => {
+      const state: GameState = {
+        ...getInitialState(),
+        restLimit: {
+          count: 3,
+          lastResetDate: getTodayDateString(),
+        },
+      };
+
+      const newState = processAction(state, 'rest');
+
+      // State should not change
+      expect(newState).toBe(state);
+    });
+  });
+
+  describe('applyPassiveDecay', () => {
+    it('should not decay if less than 30 minutes passed', () => {
+      const state = getInitialState();
+      state.lastActionTime = Date.now() - 29 * 60 * 1000; // 29 minutes ago
+
+      const decayedState = applyPassiveDecay(state);
+
+      expect(decayedState.parameters.friendliness).toBe(state.parameters.friendliness);
+    });
+
+    it('should decay friendliness by 1 after 30 minutes', () => {
+      const state = getInitialState();
+      state.lastActionTime = Date.now() - 30 * 60 * 1000; // 30 minutes ago
+
+      const decayedState = applyPassiveDecay(state);
+
+      expect(decayedState.parameters.friendliness).toBe(state.parameters.friendliness - 1);
+    });
+
+    it('should decay friendliness by 2 after 60 minutes', () => {
+      const state = getInitialState();
+      state.lastActionTime = Date.now() - 60 * 60 * 1000; // 60 minutes ago
+
+      const decayedState = applyPassiveDecay(state);
+
+      expect(decayedState.parameters.friendliness).toBe(state.parameters.friendliness - 2);
+    });
+
+    it('should not decay energy (only friendliness)', () => {
+      const state = getInitialState();
+      state.lastActionTime = Date.now() - 60 * 60 * 1000; // 60 minutes ago
+
+      const decayedState = applyPassiveDecay(state);
+
+      expect(decayedState.parameters.energy).toBe(state.parameters.energy);
+    });
+
+    it('should cap decay at 50', () => {
+      const state = getInitialState();
+      state.lastActionTime = Date.now() - 100 * 30 * 60 * 1000; // 100 intervals (50 hours)
+
+      const decayedState = applyPassiveDecay(state);
+
+      expect(decayedState.parameters.friendliness).toBe(0); // 50 - 50 = 0 (clamped)
     });
   });
 });

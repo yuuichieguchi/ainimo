@@ -1,4 +1,5 @@
-import { GameState } from '@/types/game';
+import { GameState, RestLimitState } from '@/types/game';
+import { getTodayDateString } from './gameEngine';
 
 /**
  * ユーザー入力をサニタイズしてXSS攻撃を防ぐ
@@ -38,23 +39,52 @@ export function sanitizeUserInput(input: string): string {
     .replace(/vbscript:/gi, '');
 }
 
-export function isValidGameState(data: unknown): data is GameState {
-  if (!data || typeof data !== 'object') return false;
+// 有効なRestLimitStateかどうかをチェック
+function isValidRestLimit(restLimit: unknown): restLimit is RestLimitState {
+  if (!restLimit || typeof restLimit !== 'object') return false;
+  const rl = restLimit as Partial<RestLimitState>;
+  return typeof rl.count === 'number' && typeof rl.lastResetDate === 'string';
+}
+
+// 既存データのマイグレーション（restLimitがない場合に追加）
+export function migrateGameState(data: unknown): GameState | null {
+  if (!data || typeof data !== 'object') return null;
 
   const state = data as Partial<GameState>;
 
-  return (
-    typeof state.createdAt === 'number' &&
-    typeof state.lastActionTime === 'number' &&
-    state.parameters !== undefined &&
-    typeof state.parameters === 'object' &&
-    typeof state.parameters.level === 'number' &&
-    typeof state.parameters.xp === 'number' &&
-    typeof state.parameters.intelligence === 'number' &&
-    typeof state.parameters.memory === 'number' &&
-    typeof state.parameters.friendliness === 'number' &&
-    typeof state.parameters.energy === 'number' &&
-    typeof state.parameters.mood === 'number' &&
-    Array.isArray(state.messages)
-  );
+  // 基本的なバリデーション
+  if (
+    typeof state.createdAt !== 'number' ||
+    typeof state.lastActionTime !== 'number' ||
+    !state.parameters ||
+    typeof state.parameters !== 'object' ||
+    typeof state.parameters.level !== 'number' ||
+    typeof state.parameters.xp !== 'number' ||
+    typeof state.parameters.intelligence !== 'number' ||
+    typeof state.parameters.memory !== 'number' ||
+    typeof state.parameters.friendliness !== 'number' ||
+    typeof state.parameters.energy !== 'number' ||
+    typeof state.parameters.mood !== 'number' ||
+    !Array.isArray(state.messages)
+  ) {
+    return null;
+  }
+
+  // restLimitがない場合はデフォルト値で補完
+  const restLimit: RestLimitState = isValidRestLimit(state.restLimit)
+    ? state.restLimit
+    : { count: 0, lastResetDate: getTodayDateString() };
+
+  return {
+    parameters: state.parameters,
+    messages: state.messages,
+    createdAt: state.createdAt,
+    lastActionTime: state.lastActionTime,
+    currentActivity: state.currentActivity,
+    restLimit,
+  };
+}
+
+export function isValidGameState(data: unknown): data is GameState {
+  return migrateGameState(data) !== null;
 }

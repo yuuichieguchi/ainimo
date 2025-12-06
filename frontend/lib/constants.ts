@@ -8,6 +8,12 @@ export const GAME_CONSTANTS = {
   MIN_STAT: 0,
   ENERGY_THRESHOLD: 20,
   MAX_MESSAGES: 50,
+  // 休憩制限
+  MAX_REST_PER_DAY: 3,
+  // 放置ペナルティ
+  DECAY_THRESHOLD_MINUTES: 30,    // 30分で発動
+  DECAY_PENALTY_PER_INTERVAL: 1,  // 30分ごとに -1
+  DECAY_MAX_PENALTY: 50,          // 最大 -50
 } as const;
 
 export const ACTION_EFFECTS: Record<ActionType, { xp: number; intelligence: number; memory: number; friendliness: number; energy: number }> = {

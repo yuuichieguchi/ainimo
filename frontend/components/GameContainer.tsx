@@ -221,7 +221,7 @@ export function GameContainer() {
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
                 {t('actions', language)}
               </h3>
-              <ActionButtons onAction={handleActionWithScroll} energy={state.parameters.energy} language={language} />
+              <ActionButtons onAction={handleActionWithScroll} energy={state.parameters.energy} restLimit={state.restLimit} language={language} />
             </div>
           </div>
 

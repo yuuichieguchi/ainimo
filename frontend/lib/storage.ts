@@ -1,5 +1,5 @@
 import { GameState } from '@/types/game';
-import { isValidGameState } from './validation';
+import { isValidGameState, migrateGameState } from './validation';
 
 const STORAGE_KEY = 'ainimo_save';
 
@@ -25,7 +25,8 @@ class LocalStorageAdapter implements StorageAdapter {
       const serialized = localStorage.getItem(key);
       if (!serialized) return null;
       const parsed = JSON.parse(serialized);
-      return isValidGameState(parsed) ? parsed : null;
+      // マイグレーションを適用して既存データに対応
+      return migrateGameState(parsed);
     } catch (error) {
       console.error('Failed to load from localStorage:', error);
       return null;
@@ -89,7 +90,8 @@ class IndexedDBAdapter implements StorageAdapter {
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
           const result = request.result;
-          resolve(result && isValidGameState(result) ? result : null);
+          // マイグレーションを適用して既存データに対応
+          resolve(result ? migrateGameState(result) : null);
         };
         request.onerror = () => reject(request.error);
       });

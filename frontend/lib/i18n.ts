@@ -46,6 +46,9 @@ export const translations = {
     memoryTooltip: "How well Ainimo remembers conversations. Improves with practice.",
     friendlinessTooltip: "How friendly Ainimo is. Grows through playing together.",
     energyTooltip: "Ainimo's energy level. Restored by resting.",
+    restLimitTooltip: "Rest is limited to 3 times per day. Resets at midnight.",
+    restRemaining: "Remaining",
+    noRestRemaining: "No rests left today",
   },
   ja: {
     appTitle: "Ainimo",
@@ -92,6 +95,9 @@ export const translations = {
     memoryTooltip: "Ainimoの会話記憶力。練習で改善されます。",
     friendlinessTooltip: "Ainimoのフレンドリーさ。一緒に遊ぶことで成長します。",
     energyTooltip: "Ainimoの体力。休憩で回復します。",
+    restLimitTooltip: "休憩は1日3回まで。日付が変わるとリセットされます。",
+    restRemaining: "残り",
+    noRestRemaining: "今日の休憩は終了",
   },
 } as const;
 
