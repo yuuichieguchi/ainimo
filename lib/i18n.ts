@@ -71,8 +71,8 @@ export const translations = {
     resetAinimo: "Ainimoをリセット",
     resetConfirm:
       "本当にAinimoをリセットしますか？すべての進行状況が削除されます。",
-    footerMade: "Next.js、TypeScript、Tailwind CSSで作成 ❤️",
-    footerNoAI: "外部AIは不使用 - すべてシミュレーション！",
+    footerMade: "Made with ❤️ using Next.js, TypeScript, and Tailwind CSS",
+    footerNoAI: "No external AI APIs used - all intelligence is simulated!",
     notEnoughEnergy: "体力が足りません！Ainimoを休ませてください。",
   },
 } as const;
