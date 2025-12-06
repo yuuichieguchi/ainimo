@@ -1,5 +1,6 @@
 'use client';
 
+import { forwardRef } from 'react';
 import { GameParameters, ActionType, IntelligenceTier } from '@/types/game';
 import { getMoodType, getIntelligenceTier } from '@/lib/gameEngine';
 import { Language } from '@/hooks/useLanguage';
@@ -18,51 +19,52 @@ const IMAGE_PATHS: Record<IntelligenceTier, string> = {
   adult: '/basic_ainimo_adult.png',
 };
 
-export function AinimoPet({ parameters, language, currentActivity }: AinimoPetProps) {
-  const mood = getMoodType(parameters.mood);
-  const tier = getIntelligenceTier(parameters.intelligence);
+export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
+  ({ parameters, language, currentActivity }, ref) => {
+    const mood = getMoodType(parameters.mood);
+    const tier = getIntelligenceTier(parameters.intelligence);
 
-  const getImagePath = (): string => {
-    return IMAGE_PATHS[tier];
-  };
+    const getImagePath = (): string => {
+      return IMAGE_PATHS[tier];
+    };
 
-  const getAnimationClass = (): string => {
-    // babyの時は常にバウンス
-    if (tier === 'baby') {
-      return 'animate-[bounce-gentle_2s_ease-in-out_infinite]';
-    }
+    const getAnimationClass = (): string => {
+      // babyの時は常にバウンス
+      if (tier === 'baby') {
+        return 'animate-[bounce-gentle_2s_ease-in-out_infinite]';
+      }
 
-    if (!currentActivity) return '';
+      if (!currentActivity) return '';
 
-    switch (currentActivity) {
-      case 'study':
-        return 'animate-study';
-      case 'play':
-        return 'animate-play';
-      case 'rest':
-        return 'animate-rest';
-      default:
-        return '';
-    }
-  };
+      switch (currentActivity) {
+        case 'study':
+          return 'animate-study';
+        case 'play':
+          return 'animate-play';
+        case 'rest':
+          return 'animate-rest';
+        default:
+          return '';
+      }
+    };
 
-  const getTierLabel = (): string => {
-    switch (tier) {
-      case 'baby':
-        return t('tierBaby', language);
-      case 'child':
-        return t('tierChild', language);
-      case 'teen':
-        return t('tierTeen', language);
-      case 'adult':
-        return t('tierAdult', language);
-      default:
-        return 'Unknown';
-    }
-  };
+    const getTierLabel = (): string => {
+      switch (tier) {
+        case 'baby':
+          return t('tierBaby', language);
+        case 'child':
+          return t('tierChild', language);
+        case 'teen':
+          return t('tierTeen', language);
+        case 'adult':
+          return t('tierAdult', language);
+        default:
+          return 'Unknown';
+      }
+    };
 
-  return (
-    <div className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg">
+    return (
+      <div ref={ref} className="flex flex-col items-center gap-4 p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg">
       <div className={`w-32 h-32 ${getAnimationClass()}`}>
         <img
           src={getImagePath()}
@@ -81,5 +83,8 @@ export function AinimoPet({ parameters, language, currentActivity }: AinimoPetPr
         </p>
       </div>
     </div>
-  );
-}
+    );
+  }
+);
+
+AinimoPet.displayName = 'AinimoPet';

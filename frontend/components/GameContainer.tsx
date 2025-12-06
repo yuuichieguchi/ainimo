@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { usePersistence } from '@/hooks/usePersistence';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
 import { t } from '@/lib/i18n';
+import { ActionType } from '@/types/game';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
@@ -23,6 +24,25 @@ export function GameContainer() {
   const { notificationState, isLevelUpRecent, hideNotification } = useLevelUpNotification(state.parameters.level);
 
   const [chatInput, setChatInput] = useState('');
+  const petRef = useRef<HTMLDivElement>(null);
+
+  const scrollToPetOnMobile = () => {
+    // SSR環境でwindowが存在しない場合は早期リターン
+    if (typeof window === 'undefined') return;
+
+    // モバイルデバイスかチェック (768px未満)
+    if (window.innerWidth < 768 && petRef.current) {
+      petRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  };
+
+  const handleActionWithScroll = (action: ActionType) => {
+    handleAction(action);
+    scrollToPetOnMobile();
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +90,7 @@ export function GameContainer() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <AinimoPet parameters={state.parameters} language={language} currentActivity={state.currentActivity} />
+            <AinimoPet ref={petRef} parameters={state.parameters} language={language} currentActivity={state.currentActivity} />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -102,7 +122,7 @@ export function GameContainer() {
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
                 {t('actions', language)}
               </h3>
-              <ActionButtons onAction={handleAction} energy={state.parameters.energy} language={language} />
+              <ActionButtons onAction={handleActionWithScroll} energy={state.parameters.energy} language={language} />
             </div>
           </div>
 
