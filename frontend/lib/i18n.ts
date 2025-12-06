@@ -37,6 +37,15 @@ export const translations = {
     footerMade: "Made with ❤️ using Next.js, TypeScript, and Tailwind CSS",
     footerNoAI: "No external AI APIs used - all intelligence is simulated!",
     notEnoughEnergy: "Not enough energy! Let Ainimo rest.",
+    levelUp: "Level Up!",
+    levelUpMessage: "Congratulations! You reached Level {level}!",
+    levelUpSubtitle: "Your Ainimo is growing stronger!",
+    close: "Close",
+    xpTooltip: "Experience points needed to level up. Gain XP by studying and playing!",
+    intelligenceTooltip: "How smart your Ainimo is. Increases through studying.",
+    memoryTooltip: "How well Ainimo remembers conversations. Improves with practice.",
+    friendlinessTooltip: "How friendly Ainimo is. Grows through playing together.",
+    energyTooltip: "Ainimo's energy level. Restored by resting.",
   },
   ja: {
     appTitle: "Ainimo",
@@ -74,6 +83,15 @@ export const translations = {
     footerMade: "Made with ❤️ using Next.js, TypeScript, and Tailwind CSS",
     footerNoAI: "No external AI APIs used - all intelligence is simulated!",
     notEnoughEnergy: "体力が足りません！Ainimoを休ませてください。",
+    levelUp: "レベルアップ！",
+    levelUpMessage: "おめでとうございます！レベル {level} に到達しました！",
+    levelUpSubtitle: "Ainimoがさらに成長しました！",
+    close: "閉じる",
+    xpTooltip: "レベルアップに必要な経験値。勉強や遊びで獲得できます！",
+    intelligenceTooltip: "Ainimoの賢さ。勉強を通じて向上します。",
+    memoryTooltip: "Ainimoの会話記憶力。練習で改善されます。",
+    friendlinessTooltip: "Ainimoのフレンドリーさ。一緒に遊ぶことで成長します。",
+    energyTooltip: "Ainimoの体力。休憩で回復します。",
   },
 } as const;
 
@@ -81,5 +99,5 @@ export function t(
   key: keyof typeof translations.en,
   language: Language
 ): string {
-  return translations[language][key];
+  return translations[language][key] as string;
 }

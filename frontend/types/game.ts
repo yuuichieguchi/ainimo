@@ -26,6 +26,7 @@ export interface GameState {
   messages: Message[];
   createdAt: number;
   lastActionTime: number;
+  currentActivity?: ActionType | null;
 }
 
 export interface ActionEffect {

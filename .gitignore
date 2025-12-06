@@ -1,5 +1,6 @@
 # Dependencies
 /node_modules
+/frontend/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,13 +11,19 @@
 
 # Testing
 /coverage
+/frontend/coverage
 
 # Next.js
 /.next/
+/frontend/.next/
 /out/
+/frontend/out/
+/.swc/
+/frontend/.swc/
 
 # Production
 /build
+/frontend/build
 
 # Misc
 .DS_Store
@@ -49,3 +56,6 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# claude
+*.claude

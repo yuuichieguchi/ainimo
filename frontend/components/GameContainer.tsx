@@ -5,11 +5,13 @@ import { useGameState } from '@/hooks/useGameState';
 import { usePersistence } from '@/hooks/usePersistence';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
 import { t } from '@/lib/i18n';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
 import { ActionButtons } from './ActionButtons';
+import { LevelUpNotification } from './LevelUpNotification';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
@@ -18,6 +20,7 @@ export function GameContainer() {
     loadState(loadedState);
   });
   const { theme, toggleTheme } = useDarkMode();
+  const { notificationState, isLevelUpRecent, hideNotification } = useLevelUpNotification(state.parameters.level);
 
   const [chatInput, setChatInput] = useState('');
 
@@ -44,9 +47,22 @@ export function GameContainer() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2">
-            {t('appTitle', language)}
-          </h1>
+          <div className="mb-4 flex justify-center">
+            {/* Light mode logo */}
+            <img
+              src="/logo_light_mode.png"
+              alt="Ainimo"
+              className="h-20 w-auto dark:hidden"
+              style={{ imageRendering: 'crisp-edges' }}
+            />
+            {/* Dark mode logo */}
+            <img
+              src="/logo_dark_mode.png"
+              alt="Ainimo"
+              className="h-20 w-auto hidden dark:block"
+              style={{ imageRendering: 'crisp-edges' }}
+            />
+          </div>
           <p className="text-gray-600 dark:text-gray-300">
             {t('appSubtitle', language)}
           </p>
@@ -54,7 +70,7 @@ export function GameContainer() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <AinimoPet parameters={state.parameters} language={language} />
+            <AinimoPet parameters={state.parameters} language={language} currentActivity={state.currentActivity} />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -91,7 +107,11 @@ export function GameContainer() {
           </div>
 
           <div className="space-y-6">
-            <StatusPanel parameters={state.parameters} language={language} />
+            <StatusPanel
+              parameters={state.parameters}
+              language={language}
+              isLevelUpRecent={isLevelUpRecent}
+            />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -128,6 +148,13 @@ export function GameContainer() {
           <p className="mt-1">{t('footerNoAI', language)}</p>
         </footer>
       </div>
+
+      <LevelUpNotification
+        isVisible={notificationState.isVisible}
+        newLevel={notificationState.newLevel}
+        language={language}
+        onClose={hideNotification}
+      />
     </div>
   );
 }

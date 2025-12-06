@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { TooltipProvider } from "@/contexts/TooltipContext";
 
 export const metadata: Metadata = {
   title: "Ainimo - Raise Your Virtual AI Pet",
@@ -24,7 +25,9 @@ export default function RootLayout({
           crossOrigin="anonymous"
         ></script>
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <TooltipProvider>{children}</TooltipProvider>
+      </body>
     </html>
   );
 }

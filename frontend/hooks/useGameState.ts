@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, ActionType, Message } from '@/types/game';
 import { getInitialState, processAction, getIntelligenceTier, applyPassiveDecay } from '@/lib/gameEngine';
 import { generateResponse } from '@/lib/responseEngine';
@@ -10,11 +10,36 @@ import { Language } from './useLanguage';
 
 export function useGameState(initialState?: GameState) {
   const [state, setState] = useState<GameState>(initialState || getInitialState());
+  const activityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!state.currentActivity) return;
+
+    if (activityTimerRef.current) {
+      clearTimeout(activityTimerRef.current);
+    }
+
+    activityTimerRef.current = setTimeout(() => {
+      setState((prev) => ({ ...prev, currentActivity: null }));
+    }, 3000);
+
+    return () => {
+      if (activityTimerRef.current) {
+        clearTimeout(activityTimerRef.current);
+      }
+    };
+  }, [state.currentActivity]);
 
   const handleAction = useCallback((action: ActionType) => {
     setState((prevState) => {
       const decayedState = applyPassiveDecay(prevState);
-      return processAction(decayedState, action);
+      const newState = processAction(decayedState, action);
+
+      if (action === 'study' || action === 'play' || action === 'rest') {
+        return { ...newState, currentActivity: action };
+      }
+
+      return newState;
     });
   }, []);
 
