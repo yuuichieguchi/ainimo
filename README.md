@@ -9,8 +9,10 @@ A Tamagotchi-style virtual pet web app where you raise an AI that starts very du
 - **No External AI APIs**: All "intelligence" is simulated using deterministic logic, rule-based behavior, and internal state changes
 - **Progressive Learning**: Watch your AI pet grow from a baby to an adult through 4 intelligence tiers
 - **Interactive Actions**: Talk, Study, Play, and Rest to raise your pet's stats
+- **Rich Conversations**: 450+ response variations that expand as your pet grows smarter
+- **Visual Effects**: Dynamic weather, particle effects, eye tracking, floating stat indicators, and smooth animations
 - **Persistent State**: Your progress is automatically saved in the browser
-- **Beautiful UI**: Modern, responsive design with Tailwind CSS
+- **Beautiful UI**: Modern, responsive design with Tailwind CSS and dark mode support
 - **Mobile-First**: Works seamlessly on desktop, tablet, and mobile devices
 - **Multilingual Support**: Switch between English and Japanese with automatic language detection
 
@@ -103,15 +105,25 @@ ainimo/
 │   └── GameContainer.tsx   # Main game container
 ├── hooks/
 │   ├── useGameState.ts     # Game state management
-│   └── usePersistence.ts   # Auto-save/load logic
+│   ├── usePersistence.ts   # Auto-save/load logic
+│   ├── useDarkMode.ts      # Dark mode management
+│   ├── useLanguage.ts      # Language management
+│   └── effects/
+│       ├── useParticles.ts     # Particle system
+│       ├── useWeather.ts       # Weather effects
+│       ├── useEyeTracking.ts   # Eye tracking animation
+│       └── useFloatingValues.ts # Floating stat indicators
 ├── lib/
 │   ├── gameEngine.ts       # Core game logic (pure functions)
 │   ├── responseEngine.ts   # Response generation
+│   ├── responseTemplates.ts # Response templates (EN/JA)
 │   ├── storage.ts          # Storage abstraction
-│   └── constants.ts        # Game constants and templates
+│   ├── constants.ts        # Game constants
+│   └── i18n.ts             # Internationalization
 ├── types/
 │   ├── game.ts             # Game type definitions
-│   └── responses.ts        # Response type definitions
+│   ├── responses.ts        # Response type definitions
+│   └── effects.ts          # Visual effects type definitions
 └── package.json
 ```
 
@@ -148,6 +160,7 @@ npm start
 - `npm run build`: Build for production
 - `npm start`: Start production server
 - `npm run lint`: Run ESLint
+- `npm test`: Run tests
 
 ## Reset Progress
 
