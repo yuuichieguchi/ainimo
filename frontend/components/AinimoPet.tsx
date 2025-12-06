@@ -29,24 +29,23 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
     };
 
     const getAnimationClass = (): string => {
-      // アクティビティがある時は各アクションのアニメーションを優先
-      if (currentActivity) {
-        switch (currentActivity) {
-          case 'study':
-            return 'animate-study';
-          case 'play':
-            return 'animate-play';
-          case 'rest':
-            return 'animate-rest';
-        }
-      }
-
-      // アクティビティがない時、babyはふわふわ
+      // babyの時は常にバウンス
       if (tier === 'baby') {
         return 'animate-[bounce-gentle_2s_ease-in-out_infinite]';
       }
 
-      return '';
+      if (!currentActivity) return '';
+
+      switch (currentActivity) {
+        case 'study':
+          return 'animate-study';
+        case 'play':
+          return 'animate-play';
+        case 'rest':
+          return 'animate-rest';
+        default:
+          return '';
+      }
     };
 
     const getTierLabel = (): string => {
