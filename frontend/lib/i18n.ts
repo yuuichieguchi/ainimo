@@ -132,6 +132,16 @@ export const translations = {
     itemRarityRare: "Rare",
     itemRarityEpic: "Epic",
     itemRarityLegendary: "Legendary",
+    // Shop System
+    shop: "Shop",
+    shopBuy: "Buy",
+    shopPrice: "Price",
+    shopOwned: "Owned",
+    shopNotEnoughCoins: "Not enough coins!",
+    shopPurchaseConfirm: "Purchase this item?",
+    shopPurchaseSuccess: "Purchase successful!",
+    shopPurchaseCongrats: "You got a new item!",
+    shopAll: "All",
   },
   ja: {
     appTitle: "Ainimo",
@@ -264,6 +274,16 @@ export const translations = {
     itemRarityRare: "レア",
     itemRarityEpic: "エピック",
     itemRarityLegendary: "レジェンダリー",
+    // Shop System
+    shop: "ショップ",
+    shopBuy: "購入",
+    shopPrice: "価格",
+    shopOwned: "所持済み",
+    shopNotEnoughCoins: "コインが足りません！",
+    shopPurchaseConfirm: "このアイテムを購入しますか？",
+    shopPurchaseSuccess: "購入成功！",
+    shopPurchaseCongrats: "新しいアイテムをゲット！",
+    shopAll: "すべて",
   },
 } as const;
 

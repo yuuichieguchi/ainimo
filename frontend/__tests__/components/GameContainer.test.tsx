@@ -90,6 +90,34 @@ jest.mock('@/components/inventory', () => ({
   InventoryModal: () => <div data-testid="inventory-modal">Mock InventoryModal</div>
 }));
 
+jest.mock('@/components/SettingsModal', () => ({
+  SettingsModal: () => <div data-testid="settings-modal">Mock SettingsModal</div>
+}));
+
+jest.mock('@/components/BottomToolbar', () => ({
+  BottomToolbar: ({ onActionsClick }: { onActionsClick: () => void }) => (
+    <div data-testid="bottom-toolbar">
+      <button onClick={onActionsClick} data-testid="actions-toolbar-button">Actions</button>
+    </div>
+  )
+}));
+
+jest.mock('@/components/ActionsModal', () => ({
+  ActionsModal: ({ isOpen, onAction }: { isOpen: boolean; onAction: (action: string) => void }) => (
+    isOpen ? (
+      <div data-testid="actions-modal">
+        <button onClick={() => onAction('study')} data-testid="study-button">Study</button>
+        <button onClick={() => onAction('play')} data-testid="play-button">Play</button>
+        <button onClick={() => onAction('rest')} data-testid="rest-button">Rest</button>
+      </div>
+    ) : null
+  )
+}));
+
+jest.mock('@/components/shop', () => ({
+  ShopModal: () => <div data-testid="shop-modal">Mock ShopModal</div>
+}));
+
 describe('GameContainer - Mobile Auto Scroll Feature', () => {
   const mockHandleAction = jest.fn();
   const mockHandleChat = jest.fn();
@@ -182,6 +210,9 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       },
       addItem: jest.fn(),
       addManyCoins: jest.fn(),
+      equip: jest.fn(),
+      unequip: jest.fn(),
+      purchaseItem: jest.fn(),
       loadInventory: jest.fn(),
       resetInventory: jest.fn(),
     });
@@ -234,6 +265,10 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
 
       render(<GameContainer />);
 
+      // ActionsModalを開く
+      const actionsToolbarButton = screen.getByTestId('actions-toolbar-button');
+      fireEvent.click(actionsToolbarButton);
+
       const studyButton = screen.getByTestId('study-button');
       fireEvent.click(studyButton);
 
@@ -253,6 +288,10 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       });
 
       render(<GameContainer />);
+
+      // ActionsModalを開く
+      const actionsToolbarButton = screen.getByTestId('actions-toolbar-button');
+      fireEvent.click(actionsToolbarButton);
 
       const playButton = screen.getByTestId('play-button');
       fireEvent.click(playButton);
@@ -274,6 +313,10 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
 
       render(<GameContainer />);
 
+      // ActionsModalを開く
+      const actionsToolbarButton = screen.getByTestId('actions-toolbar-button');
+      fireEvent.click(actionsToolbarButton);
+
       const studyButton = screen.getByTestId('study-button');
       fireEvent.click(studyButton);
 
@@ -291,6 +334,10 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
 
       render(<GameContainer />);
 
+      // ActionsModalを開く
+      const actionsToolbarButton = screen.getByTestId('actions-toolbar-button');
+      fireEvent.click(actionsToolbarButton);
+
       const restButton = screen.getByTestId('rest-button');
       fireEvent.click(restButton);
 
@@ -307,6 +354,10 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       });
 
       render(<GameContainer />);
+
+      // ActionsModalを開く
+      const actionsToolbarButton = screen.getByTestId('actions-toolbar-button');
+      fireEvent.click(actionsToolbarButton);
 
       const playButton = screen.getByTestId('play-button');
       fireEvent.click(playButton);
@@ -326,6 +377,10 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       });
 
       render(<GameContainer />);
+
+      // ActionsModalを開く
+      const actionsToolbarButton = screen.getByTestId('actions-toolbar-button');
+      fireEvent.click(actionsToolbarButton);
 
       const studyButton = screen.getByTestId('study-button');
       const playButton = screen.getByTestId('play-button');

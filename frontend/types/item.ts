@@ -35,6 +35,14 @@ export interface PlayerInventory {
   equipped: EquippedItems;
 }
 
+// レアリティ別価格
+export const RARITY_PRICES: Record<ItemRarity, number> = {
+  common: 50,
+  rare: 150,
+  epic: 400,
+  legendary: 1000,
+};
+
 // レアリティカラー（UI用）
 export const RARITY_COLORS: Record<ItemRarity, string> = {
   common: '#9CA3AF',

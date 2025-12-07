@@ -5,6 +5,7 @@ import {
   InventoryItem,
   PlayerInventory,
   EquippedItems,
+  RARITY_PRICES,
 } from '@/types/item';
 import { getItemById, getInitialInventory, ALL_ITEMS } from './itemDefinitions';
 
@@ -196,4 +197,43 @@ export function migrateInventory(data: unknown): PlayerInventory {
     return data;
   }
   return getInitialInventory();
+}
+
+// アイテム価格を取得
+export function getItemPrice(item: Item): number {
+  return RARITY_PRICES[item.rarity];
+}
+
+// アイテム購入可能かチェック
+export function canPurchaseItem(inventory: PlayerInventory, itemId: string): boolean {
+  const item = getItemById(itemId);
+  if (!item) return false;
+
+  // 既に所持している場合は購入不可
+  if (hasItem(inventory, itemId)) return false;
+
+  // コイン不足チェック
+  const price = getItemPrice(item);
+  return inventory.coins >= price;
+}
+
+// アイテムを購入
+export function purchaseItem(
+  inventory: PlayerInventory,
+  itemId: string
+): PlayerInventory | null {
+  const item = getItemById(itemId);
+  if (!item) return null;
+
+  // 既に所持している場合は購入不可
+  if (hasItem(inventory, itemId)) return null;
+
+  const price = getItemPrice(item);
+
+  // コイン減算
+  const afterSpend = spendCoins(inventory, price);
+  if (!afterSpend) return null;
+
+  // アイテム追加
+  return addItemToInventory(afterSpend, itemId);
 }

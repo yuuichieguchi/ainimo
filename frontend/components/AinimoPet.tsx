@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useRef, useCallback, useState } from 'react';
 import { GameParameters, ActionType, IntelligenceTier } from '@/types/game';
 import { PersonalityType } from '@/types/personality';
+import { EquippedItems } from '@/types/item';
 import { getMoodType, getIntelligenceTier } from '@/lib/gameEngine';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
@@ -14,7 +15,7 @@ import {
   useEmote,
   useEyeTracking,
 } from '@/hooks/effects';
-import { ParticleCanvas, EmoteBubble } from '@/components/effects';
+import { ParticleCanvas, EmoteBubble, EquippedItemsOverlay } from '@/components/effects';
 
 interface AinimoPetProps {
   parameters: GameParameters;
@@ -24,6 +25,7 @@ interface AinimoPetProps {
   onInteraction?: (type: 'tap' | 'pet') => void;
   personalityType?: PersonalityType;
   personalityStrength?: number;
+  equipped?: EquippedItems;
 }
 
 const IMAGE_PATHS: Record<IntelligenceTier, string> = {
@@ -34,7 +36,7 @@ const IMAGE_PATHS: Record<IntelligenceTier, string> = {
 };
 
 export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
-  ({ parameters, language, currentActivity, previousTier, onInteraction, personalityType, personalityStrength = 0 }, ref) => {
+  ({ parameters, language, currentActivity, previousTier, onInteraction, personalityType, personalityStrength = 0, equipped }, ref) => {
     const mood = getMoodType(parameters.mood);
     const tier = getIntelligenceTier(parameters.intelligence);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -264,6 +266,9 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
               }}
             />
           </div>
+
+          {/* 装備アイテムオーバーレイ */}
+          {equipped && <EquippedItemsOverlay equipped={equipped} />}
 
           {/* パーティクル */}
           <ParticleCanvas particles={particles} />

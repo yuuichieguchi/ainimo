@@ -27,6 +27,7 @@ import { EquipmentPanel, InventoryModal } from './inventory';
 import { SettingsModal } from './SettingsModal';
 import { BottomToolbar } from './BottomToolbar';
 import { ActionsModal } from './ActionsModal';
+import { ShopModal } from './shop';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
@@ -84,6 +85,9 @@ export function GameContainer() {
   // アクションモーダル
   const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
 
+  // ショップモーダル
+  const [isShopModalOpen, setIsShopModalOpen] = useState(false);
+
   // インベントリフック
   const {
     inventory,
@@ -91,6 +95,7 @@ export function GameContainer() {
     addManyCoins,
     equip,
     unequip,
+    purchaseItem,
     loadInventory,
     resetInventory,
   } = useInventory();
@@ -320,6 +325,7 @@ export function GameContainer() {
               onInteraction={handlePetInteraction}
               personalityType={personalityState.type}
               personalityStrength={personalityState.strength}
+              equipped={inventory.equipped}
             />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
@@ -381,9 +387,12 @@ export function GameContainer() {
         <BottomToolbar
           onActionsClick={() => setIsActionsModalOpen(true)}
           onMiniGamesClick={() => setIsMiniGameModalOpen(true)}
+          onShopClick={() => setIsShopModalOpen(true)}
+          onInventoryClick={() => setIsInventoryModalOpen(true)}
           onAchievementsClick={() => setIsAchievementModalOpen(true)}
           onSettingsClick={() => setIsSettingsModalOpen(true)}
           energy={state.parameters.energy}
+          coins={inventory.coins}
           unlockedCount={unlockedCount}
           totalCount={totalCount}
           language={language}
@@ -458,6 +467,14 @@ export function GameContainer() {
         energy={state.parameters.energy}
         restLimit={state.restLimit}
         language={language}
+      />
+
+      <ShopModal
+        isOpen={isShopModalOpen}
+        onClose={() => setIsShopModalOpen(false)}
+        language={language}
+        inventory={inventory}
+        onPurchase={purchaseItem}
       />
     </EnvironmentLayer>
   );

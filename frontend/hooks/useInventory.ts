@@ -16,6 +16,9 @@ import {
   countTotalItems,
   calculateCollectionProgress,
   isFullyEquipped,
+  purchaseItem as purchaseItemEngine,
+  canPurchaseItem,
+  getItemPrice,
 } from '@/lib/itemEngine';
 import { getInitialInventory, getItemById } from '@/lib/itemDefinitions';
 
@@ -30,6 +33,11 @@ interface UseInventoryReturn {
   spendManyCoins: (amount: number) => boolean;
   equip: (itemId: string) => boolean;
   unequip: (category: ItemCategory) => void;
+
+  // ショップ
+  purchaseItem: (itemId: string) => boolean;
+  canPurchase: (itemId: string) => boolean;
+  getPrice: (itemId: string) => number | null;
 
   // クエリ
   owns: (itemId: string) => boolean;
@@ -92,6 +100,32 @@ export function useInventory(): UseInventoryReturn {
   // 装備解除
   const unequip = useCallback((category: ItemCategory): void => {
     setInventory((prev) => unequipItem(prev, category));
+  }, []);
+
+  // アイテム購入
+  const purchaseItem = useCallback((itemId: string): boolean => {
+    let success = false;
+    setInventory((prev) => {
+      const result = purchaseItemEngine(prev, itemId);
+      success = result !== null;
+      return result ?? prev;
+    });
+    return success;
+  }, []);
+
+  // 購入可能チェック
+  const canPurchase = useCallback(
+    (itemId: string): boolean => {
+      return canPurchaseItem(inventory, itemId);
+    },
+    [inventory]
+  );
+
+  // アイテム価格取得
+  const getPrice = useCallback((itemId: string): number | null => {
+    const item = getItemById(itemId);
+    if (!item) return null;
+    return getItemPrice(item);
   }, []);
 
   // アイテム所持チェック
@@ -166,6 +200,9 @@ export function useInventory(): UseInventoryReturn {
     spendManyCoins,
     equip,
     unequip,
+    purchaseItem,
+    canPurchase,
+    getPrice,
     owns,
     getEquipped,
     getItemsInCategory,
