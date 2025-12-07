@@ -414,8 +414,8 @@ export function GameContainer() {
               onClick={() => setIsSettingsModalOpen(true)}
               className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-md p-4 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all transform hover:scale-[1.02]"
             >
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xl">⚙️</span>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚙️</span>
                 <span className="font-bold">{t('settings', language)}</span>
               </div>
             </button>
