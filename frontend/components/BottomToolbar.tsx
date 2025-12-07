@@ -138,18 +138,20 @@ export function BottomToolbar({
               key={item.id}
               onClick={item.onClick}
               aria-label={item.ariaLabel}
-              className={`flex items-center justify-center gap-1 px-2 py-2.5 rounded-xl transition-all hover:scale-105 ${
+              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-xl transition-all hover:scale-105 ${
                 item.color
                   ? `bg-gradient-to-r ${item.color} ${item.hoverColor} text-white shadow-md`
                   : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
-              {item.label && (
-                <span className="font-bold text-xs truncate max-w-[60px]">
-                  {item.label}
-                </span>
-              )}
+              <div className="flex items-center gap-1">
+                <span className="text-lg">{item.icon}</span>
+                {item.label && (
+                  <span className="font-bold text-xs">
+                    {item.label}
+                  </span>
+                )}
+              </div>
               {item.badge && (
                 <span className={`text-[10px] px-1 py-0.5 rounded-full whitespace-nowrap ${
                   item.color ? 'bg-white/20' : 'bg-gray-300 dark:bg-gray-600'
