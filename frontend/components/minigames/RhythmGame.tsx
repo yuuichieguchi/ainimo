@@ -22,6 +22,11 @@ const LANE_COLORS = [
   'from-yellow-400 to-yellow-600',
 ];
 
+// ヒットラインの位置（%）- ボタン(h-12=48px)の上、ゲームエリア(h-64=256px)
+const HIT_LINE_POSITION = 81.25; // (256 - 48) / 256 * 100
+// ノートの落下時間（ms）
+const NOTE_TRAVEL_TIME = 2000;
+
 export function RhythmGame({
   gameState,
   onBegin,
@@ -31,7 +36,9 @@ export function RhythmGame({
   language,
 }: RhythmGameProps) {
   const [countdown, setCountdown] = useState(3);
+  const [currentTime, setCurrentTime] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // カウントダウン＆開始
   useEffect(() => {
@@ -41,7 +48,6 @@ export function RhythmGame({
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          onBegin();
           return 0;
         }
         return prev - 1;
@@ -49,7 +55,42 @@ export function RhythmGame({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameState.isPlaying, onBegin]);
+  }, [gameState.isPlaying]);
+
+  // カウントダウン終了時にゲーム開始（setState外で呼び出し）
+  useEffect(() => {
+    if (countdown === 0 && !gameState.isPlaying) {
+      onBegin();
+    }
+  }, [countdown, gameState.isPlaying, onBegin]);
+
+  // requestAnimationFrameでノート位置を60fps更新
+  useEffect(() => {
+    if (!gameState.isPlaying) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    // ゲーム開始時に即座にcurrentTimeを設定（初回描画ずれ防止）
+    setCurrentTime(Date.now());
+
+    const updateTime = () => {
+      setCurrentTime(Date.now());
+      animationFrameRef.current = requestAnimationFrame(updateTime);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateTime);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [gameState.isPlaying]);
 
   // ゲーム完了チェック
   useEffect(() => {
@@ -100,18 +141,29 @@ export function RhythmGame({
     [gameState.isPlaying, onHitNote]
   );
 
-  // ノート位置計算
+  // ノート位置計算（currentTimeを使用して60fpsで更新）
+  // ノートがヒットラインに到達するタイミングでtargetTimeになるよう計算
   const getNotePosition = (note: typeof gameState.notes[0]): number => {
-    if (!gameState.isPlaying) return -100;
-    const elapsedTime = Date.now() - gameState.startTime;
+    if (!gameState.isPlaying || currentTime === 0) return -100;
+    const elapsedTime = currentTime - gameState.startTime;
     const timeToHit = note.targetTime - elapsedTime;
-    // 2秒で画面全体を移動
-    const position = 100 - (timeToHit / 2000) * 100;
+    // timeToHit=0のときヒットライン位置(81.25%)、timeToHit=2000のとき0%
+    const position = HIT_LINE_POSITION - (timeToHit / NOTE_TRAVEL_TIME) * HIT_LINE_POSITION;
     return position;
   };
 
-  // 現在の次のノートのレーン
-  const currentNote = gameState.notes[gameState.currentNoteIndex];
+  // 最新の判定結果を取得
+  const getLatestJudgement = (): { result: string; lane: number } | null => {
+    for (let i = gameState.currentNoteIndex - 1; i >= 0; i--) {
+      const note = gameState.notes[i];
+      if (note.result !== null) {
+        return { result: note.result, lane: note.lane };
+      }
+    }
+    return null;
+  };
+
+  const latestJudgement = getLatestJudgement();
 
   return (
     <div className="p-4" ref={containerRef}>
@@ -173,6 +225,35 @@ export function RhythmGame({
 
         {/* ヒットライン */}
         <div className="absolute bottom-12 left-0 right-0 h-1 bg-white/50" />
+
+        {/* 判定表示 */}
+        {latestJudgement && (
+          <div
+            key={gameState.currentNoteIndex}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
+          >
+            <div
+              className="text-2xl font-bold animate-bounce"
+              style={{
+                color: latestJudgement.result === 'marvelous' ? '#FF00FF' :
+                       latestJudgement.result === 'excellent' ? '#FFD700' :
+                       latestJudgement.result === 'good' ? '#00FF00' :
+                       latestJudgement.result === 'fair' ? '#87CEEB' : '#FF4444',
+                textShadow: '0 0 10px currentColor',
+              }}
+            >
+              {latestJudgement.result === 'marvelous' ? 'MARVELOUS!' :
+               latestJudgement.result === 'excellent' ? 'EXCELLENT!' :
+               latestJudgement.result === 'good' ? 'GOOD' :
+               latestJudgement.result === 'fair' ? 'FAIR' : 'MISS'}
+            </div>
+            {gameState.combo > 1 && (
+              <div className="text-xl font-bold text-orange-400 mt-1" style={{ textShadow: '0 0 8px #FF6B00' }}>
+                {gameState.combo} COMBO!
+              </div>
+            )}
+          </div>
+        )}
 
         {/* レーンボタン */}
         <div className="absolute bottom-0 left-0 right-0 flex">

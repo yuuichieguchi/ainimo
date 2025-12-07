@@ -74,7 +74,7 @@ export interface MemoryGameState {
 }
 
 // リズムゲーム用
-export type NoteResult = 'perfect' | 'good' | 'miss' | null;
+export type NoteResult = 'marvelous' | 'excellent' | 'good' | 'fair' | 'miss' | null;
 
 export interface RhythmNote {
   id: number;

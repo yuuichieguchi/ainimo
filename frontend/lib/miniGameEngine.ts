@@ -217,15 +217,22 @@ export function hitRhythmNote(state: RhythmGameState, lane: number, hitTime: num
   if (currentNote.lane !== lane) return state;
 
   const timingDiff = Math.abs(elapsedTime - currentNote.targetTime);
-  let result: 'perfect' | 'good' | 'miss';
+  let result: 'marvelous' | 'excellent' | 'good' | 'fair' | 'miss';
   let scoreAdd = 0;
 
-  if (timingDiff <= 50) {
-    result = 'perfect';
+  // 判定ウィンドウ: Marvelous(±30ms), Excellent(±60ms), Good(±100ms), Fair(±150ms), Miss(>150ms)
+  if (timingDiff <= 30) {
+    result = 'marvelous';
     scoreAdd = 100;
-  } else if (timingDiff <= 150) {
+  } else if (timingDiff <= 60) {
+    result = 'excellent';
+    scoreAdd = 80;
+  } else if (timingDiff <= 100) {
     result = 'good';
     scoreAdd = 50;
+  } else if (timingDiff <= 150) {
+    result = 'fair';
+    scoreAdd = 20;
   } else {
     result = 'miss';
     scoreAdd = 0;
