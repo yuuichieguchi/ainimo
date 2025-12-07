@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { RhythmGameState } from '@/types/miniGame';
 import { Language } from '@/hooks/useLanguage';
 import { RHYTHM_LANES } from '@/lib/miniGameDefinitions';
@@ -26,6 +26,24 @@ const LANE_COLORS = [
 const HIT_LINE_POSITION = 81.25; // (256 - 48) / 256 * 100
 // ノートの落下時間（ms）
 const NOTE_TRAVEL_TIME = 2000;
+
+// 判定結果の色マッピング
+const JUDGEMENT_COLORS: Record<string, string> = {
+  marvelous: '#FF00FF',
+  excellent: '#FFD700',
+  good: '#00FF00',
+  fair: '#87CEEB',
+  miss: '#FF4444',
+};
+
+// 判定結果の表示テキスト
+const JUDGEMENT_TEXT: Record<string, string> = {
+  marvelous: 'MARVELOUS!',
+  excellent: 'EXCELLENT!',
+  good: 'GOOD',
+  fair: 'FAIR',
+  miss: 'MISS',
+};
 
 export function RhythmGame({
   gameState,
@@ -100,13 +118,14 @@ export function RhythmGame({
   }, [gameState.isPlaying, gameState.currentNoteIndex, gameState.notes.length, onComplete]);
 
   // ノート通過チェック（ミス判定）
+  const { isPlaying, notes, currentNoteIndex, startTime } = gameState;
   useEffect(() => {
-    if (!gameState.isPlaying) return;
+    if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      const currentNote = gameState.notes[gameState.currentNoteIndex];
+      const currentNote = notes[currentNoteIndex];
       if (currentNote && currentNote.result === null) {
-        const elapsedTime = Date.now() - gameState.startTime;
+        const elapsedTime = Date.now() - startTime;
         if (elapsedTime > currentNote.targetTime + 200) {
           onMissNote();
         }
@@ -114,7 +133,7 @@ export function RhythmGame({
     }, 50);
 
     return () => clearInterval(interval);
-  }, [gameState, onMissNote]);
+  }, [isPlaying, notes, currentNoteIndex, startTime, onMissNote]);
 
   // キーボード入力
   useEffect(() => {
@@ -152,18 +171,16 @@ export function RhythmGame({
     return position;
   };
 
-  // 最新の判定結果を取得
-  const getLatestJudgement = (): { result: string; lane: number } | null => {
-    for (let i = gameState.currentNoteIndex - 1; i >= 0; i--) {
-      const note = gameState.notes[i];
+  // 最新の判定結果を取得（useMemoでキャッシュ）
+  const latestJudgement = useMemo(() => {
+    for (let i = currentNoteIndex - 1; i >= 0; i--) {
+      const note = notes[i];
       if (note.result !== null) {
         return { result: note.result, lane: note.lane };
       }
     }
     return null;
-  };
-
-  const latestJudgement = getLatestJudgement();
+  }, [notes, currentNoteIndex]);
 
   return (
     <div className="p-4" ref={containerRef}>
@@ -229,23 +246,17 @@ export function RhythmGame({
         {/* 判定表示 */}
         {latestJudgement && (
           <div
-            key={gameState.currentNoteIndex}
+            key={currentNoteIndex}
             className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
           >
             <div
               className="text-2xl font-bold animate-bounce"
               style={{
-                color: latestJudgement.result === 'marvelous' ? '#FF00FF' :
-                       latestJudgement.result === 'excellent' ? '#FFD700' :
-                       latestJudgement.result === 'good' ? '#00FF00' :
-                       latestJudgement.result === 'fair' ? '#87CEEB' : '#FF4444',
+                color: JUDGEMENT_COLORS[latestJudgement.result],
                 textShadow: '0 0 10px currentColor',
               }}
             >
-              {latestJudgement.result === 'marvelous' ? 'MARVELOUS!' :
-               latestJudgement.result === 'excellent' ? 'EXCELLENT!' :
-               latestJudgement.result === 'good' ? 'GOOD' :
-               latestJudgement.result === 'fair' ? 'FAIR' : 'MISS'}
+              {JUDGEMENT_TEXT[latestJudgement.result]}
             </div>
             {gameState.combo > 1 && (
               <div className="text-xl font-bold text-orange-400 mt-1" style={{ textShadow: '0 0 8px #FF6B00' }}>
