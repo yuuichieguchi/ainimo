@@ -25,6 +25,7 @@ import { PersonalityBadge } from './PersonalityBadge';
 import { EnvironmentLayer, FloatingValues } from './effects';
 import { MiniGameModal } from './minigames';
 import { EquipmentPanel, InventoryModal } from './inventory';
+import { SettingsModal } from './SettingsModal';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
@@ -75,6 +76,9 @@ export function GameContainer() {
 
   // インベントリモーダル
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+
+  // 設定モーダル
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // インベントリフック
   const {
@@ -366,6 +370,13 @@ export function GameContainer() {
               language={language}
             />
 
+            {/* インベントリパネル */}
+            <EquipmentPanel
+              equipped={inventory.equipped}
+              onOpenInventory={() => setIsInventoryModalOpen(true)}
+              language={language}
+            />
+
             {/* ミニゲームボタン */}
             <button
               onClick={() => setIsMiniGameModalOpen(true)}
@@ -381,13 +392,6 @@ export function GameContainer() {
                 </span>
               </div>
             </button>
-
-            {/* インベントリパネル */}
-            <EquipmentPanel
-              equipped={inventory.equipped}
-              onOpenInventory={() => setIsInventoryModalOpen(true)}
-              language={language}
-            />
 
             {/* 実績ボタン */}
             <button
@@ -405,33 +409,16 @@ export function GameContainer() {
               </div>
             </button>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-                {t('settings', language)}
-              </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={toggleTheme}
-                  className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  {theme === 'system' && t('themeSystem', language)}
-                  {theme === 'light' && t('themeLight', language)}
-                  {theme === 'dark' && t('themeDark', language)}
-                </button>
-                <button
-                  onClick={toggleLanguage}
-                  className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  {language === 'en' ? t('languageJa', language) : t('languageEn', language)}
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="w-full px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
-                >
-                  {t('resetAinimo', language)}
-                </button>
+            {/* 設定ボタン */}
+            <button
+              onClick={() => setIsSettingsModalOpen(true)}
+              className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-md p-4 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xl">⚙️</span>
+                <span className="font-bold">{t('settings', language)}</span>
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -485,6 +472,16 @@ export function GameContainer() {
         inventory={inventory}
         onEquip={equip}
         onUnequip={unequip}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        language={language}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onToggleLanguage={toggleLanguage}
+        onReset={handleReset}
       />
     </EnvironmentLayer>
   );
