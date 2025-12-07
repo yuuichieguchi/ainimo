@@ -17,7 +17,6 @@ import { useInventory } from '@/hooks/useInventory';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
-import { ActionButtons } from './ActionButtons';
 import { LevelUpNotification } from './LevelUpNotification';
 import { AchievementModal } from './AchievementModal';
 import { AchievementNotification } from './AchievementNotification';
@@ -26,6 +25,8 @@ import { EnvironmentLayer, FloatingValues } from './effects';
 import { MiniGameModal } from './minigames';
 import { EquipmentPanel, InventoryModal } from './inventory';
 import { SettingsModal } from './SettingsModal';
+import { BottomToolbar } from './BottomToolbar';
+import { ActionsModal } from './ActionsModal';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
@@ -79,6 +80,9 @@ export function GameContainer() {
 
   // 設定モーダル
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  // アクションモーダル
+  const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
 
   // インベントリフック
   const {
@@ -344,12 +348,6 @@ export function GameContainer() {
               </form>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-                {t('actions', language)}
-              </h3>
-              <ActionButtons onAction={handleActionWithScroll} energy={state.parameters.energy} restLimit={state.restLimit} language={language} />
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -376,51 +374,20 @@ export function GameContainer() {
               onOpenInventory={() => setIsInventoryModalOpen(true)}
               language={language}
             />
-
-            {/* ミニゲームボタン */}
-            <button
-              onClick={() => setIsMiniGameModalOpen(true)}
-              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl shadow-md p-4 hover:from-green-600 hover:to-teal-600 transition-all transform hover:scale-[1.02]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🎮</span>
-                  <span className="font-bold">{t('miniGames', language)}</span>
-                </div>
-                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">
-                  ⚡ {state.parameters.energy}
-                </span>
-              </div>
-            </button>
-
-            {/* 実績ボタン */}
-            <button
-              onClick={() => setIsAchievementModalOpen(true)}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-md p-4 hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-[1.02]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🏆</span>
-                  <span className="font-bold">{t('achievements', language)}</span>
-                </div>
-                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">
-                  {unlockedCount}/{totalCount}
-                </span>
-              </div>
-            </button>
-
-            {/* 設定ボタン */}
-            <button
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-md p-4 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all transform hover:scale-[1.02]"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">⚙️</span>
-                <span className="font-bold">{t('settings', language)}</span>
-              </div>
-            </button>
           </div>
         </div>
+
+        {/* ツールバー（デスクトップ：セクション表示） */}
+        <BottomToolbar
+          onActionsClick={() => setIsActionsModalOpen(true)}
+          onMiniGamesClick={() => setIsMiniGameModalOpen(true)}
+          onAchievementsClick={() => setIsAchievementModalOpen(true)}
+          onSettingsClick={() => setIsSettingsModalOpen(true)}
+          energy={state.parameters.energy}
+          unlockedCount={unlockedCount}
+          totalCount={totalCount}
+          language={language}
+        />
 
         <footer className="text-center text-sm text-gray-500 dark:text-gray-400">
           <p>{t('footerMade', language)}</p>
@@ -482,6 +449,15 @@ export function GameContainer() {
         onToggleTheme={toggleTheme}
         onToggleLanguage={toggleLanguage}
         onReset={handleReset}
+      />
+
+      <ActionsModal
+        isOpen={isActionsModalOpen}
+        onClose={() => setIsActionsModalOpen(false)}
+        onAction={handleActionWithScroll}
+        energy={state.parameters.energy}
+        restLimit={state.restLimit}
+        language={language}
       />
     </EnvironmentLayer>
   );
