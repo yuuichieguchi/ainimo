@@ -58,7 +58,7 @@ export function BottomToolbar({
     {
       id: 'settings',
       icon: '⚙️',
-      label: null,
+      label: t('settings', language),
       ariaLabel: t('settings', language),
       onClick: onSettingsClick,
       badge: null,
@@ -80,7 +80,7 @@ export function BottomToolbar({
               className={`flex flex-col items-center justify-center gap-1 py-2 rounded-xl transition-all min-h-[60px] ${
                 item.color
                   ? `bg-gradient-to-r ${item.color} ${item.hoverColor} text-white shadow-md`
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
               }`}
             >
               <span className="text-xl">{item.icon}</span>
@@ -99,14 +99,14 @@ export function BottomToolbar({
         </div>
       </div>
 
-      {/* デスクトップ: セクションとして表示 */}
-      <div className="hidden md:flex justify-center items-center gap-4">
+      {/* デスクトップ: セクションとして表示（グリッド全体を横断） */}
+      <div className="hidden md:grid grid-cols-4 gap-4">
           {toolbarItems.map((item) => (
             <button
               key={item.id}
               onClick={item.onClick}
               aria-label={item.ariaLabel}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all hover:scale-105 ${
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all hover:scale-105 ${
                 item.color
                   ? `bg-gradient-to-r ${item.color} ${item.hoverColor} text-white shadow-md`
                   : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'

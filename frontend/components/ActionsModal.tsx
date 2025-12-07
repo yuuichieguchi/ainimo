@@ -131,7 +131,7 @@ export function ActionsModal({
                 disabled={isActionDisabled}
                 className={`
                   w-full flex items-center gap-4 p-4 rounded-xl text-white font-semibold
-                  transition-all duration-200 transform
+                  transition-all duration-200 transform min-h-[88px]
                   ${
                     isActionDisabled
                       ? 'bg-gray-400 cursor-not-allowed opacity-50'
@@ -143,14 +143,14 @@ export function ActionsModal({
                 <div className="flex-1 text-left">
                   <div className="text-lg">{label}</div>
                   <div className="text-sm opacity-80">{description}</div>
-                  {action === 'rest' && (
-                    <div className="text-xs opacity-70 mt-1">
-                      {remainingRest > 0
-                        ? `${t('restRemaining', language)}: ${remainingRest}/${GAME_CONSTANTS.MAX_REST_PER_DAY}`
-                        : t('noRestRemaining', language)}
-                    </div>
-                  )}
                 </div>
+                {action === 'rest' && (
+                  <div className="text-sm opacity-80 text-right whitespace-nowrap">
+                    {remainingRest > 0
+                      ? `${remainingRest}/${GAME_CONSTANTS.MAX_REST_PER_DAY}`
+                      : t('noRestRemaining', language)}
+                  </div>
+                )}
               </button>
             );
           })}
