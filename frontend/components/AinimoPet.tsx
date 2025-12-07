@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useRef, useCallback, useState } from 'react';
 import { GameParameters, ActionType, IntelligenceTier } from '@/types/game';
 import { PersonalityType } from '@/types/personality';
 import { EquippedItems } from '@/types/item';
-import { getMoodType, getIntelligenceTier } from '@/lib/gameEngine';
+import { getIntelligenceTier } from '@/lib/gameEngine';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
 import { PERSONALITY_VISUALS } from '@/lib/personalityDefinitions';
@@ -29,15 +29,14 @@ interface AinimoPetProps {
 }
 
 const IMAGE_PATHS: Record<IntelligenceTier, string> = {
-  baby: '/basic_ainimo_baby.png',
-  child: '/basic_ainimo_child.png',
-  teen: '/basic_ainimo_teen.png',
-  adult: '/basic_ainimo_adult.png',
+  baby: '/basic_ainimo_baby_3d.png',
+  child: '/basic_ainimo_child_3d.png',
+  teen: '/basic_ainimo_teen_3d.png',
+  adult: '/basic_ainimo_adult_3d.png',
 };
 
 export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
   ({ parameters, language, currentActivity, previousTier, onInteraction, personalityType, personalityStrength = 0, equipped }, ref) => {
-    const mood = getMoodType(parameters.mood);
     const tier = getIntelligenceTier(parameters.intelligence);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -258,7 +257,7 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
             <img
               src={getImagePath()}
               alt={`Ainimo ${getTierLabel()}`}
-              className="w-full h-full object-contain dark:[filter:drop-shadow(0_0_2px_rgba(0,0,0,1))_drop-shadow(0_0_4px_rgba(0,0,0,0.8))]"
+              className="w-full h-full object-contain scale-75 -translate-y-4 dark:[filter:drop-shadow(0_0_2px_rgba(0,0,0,1))_drop-shadow(0_0_4px_rgba(0,0,0,0.8))]"
               style={getPersonalityFilterStyle()}
               draggable={false}
               onError={(e) => {

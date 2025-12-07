@@ -340,16 +340,14 @@ export function GameContainer() {
         <header className="text-center">
           <div className="mb-4 flex justify-center">
             <img
-              src="/logo_light_mode.png"
+              src="/logo_light_3d.png"
               alt="Ainimo"
-              className="h-20 w-auto dark:hidden"
-              style={{ imageRendering: 'crisp-edges' }}
+              className="h-40 w-auto dark:hidden"
             />
             <img
-              src="/logo_dark_mode.png"
+              src="/logo_dark_3d.png"
               alt="Ainimo"
-              className="h-20 w-auto hidden dark:block"
-              style={{ imageRendering: 'crisp-edges' }}
+              className="h-40 w-auto hidden dark:block"
             />
           </div>
           <p className="text-gray-600 dark:text-gray-300">
