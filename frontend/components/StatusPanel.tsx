@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { GameParameters } from '@/types/game';
+import { BilingualText } from '@/types/achievement';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
 import { Tooltip } from '@/components/Tooltip';
@@ -11,6 +12,7 @@ interface StatusPanelProps {
   parameters: GameParameters;
   language: Language;
   isLevelUpRecent?: boolean;
+  selectedTitle?: BilingualText | null;
 }
 
 function ProgressBar({
@@ -68,7 +70,7 @@ function ProgressBar({
   );
 }
 
-export function StatusPanel({ parameters, language, isLevelUpRecent = false }: StatusPanelProps) {
+export function StatusPanel({ parameters, language, isLevelUpRecent = false, selectedTitle }: StatusPanelProps) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -83,7 +85,14 @@ export function StatusPanel({ parameters, language, isLevelUpRecent = false }: S
   return (
     <div className="space-y-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-800 dark:text-white">{t('status', language)}</h3>
+        <div>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white">{t('status', language)}</h3>
+          {selectedTitle && (
+            <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+              「{selectedTitle[language]}」
+            </p>
+          )}
+        </div>
         <div
           className={`
             px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500

@@ -6,26 +6,67 @@ import { usePersistence } from '@/hooks/usePersistence';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
+import { useAchievements } from '@/hooks/useAchievements';
 import { useTimeOfDay, useWeather, useSeason, useFloatingValues } from '@/hooks/effects';
 import { t } from '@/lib/i18n';
 import { ActionType, IntelligenceTier } from '@/types/game';
-import { getIntelligenceTier, canPerformAction } from '@/lib/gameEngine';
-import { ACTION_EFFECTS } from '@/lib/constants';
+import { getIntelligenceTier, canPerformAction, getRemainingRestCount } from '@/lib/gameEngine';
+import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
 import { ActionButtons } from './ActionButtons';
 import { LevelUpNotification } from './LevelUpNotification';
+import { AchievementModal } from './AchievementModal';
+import { AchievementNotification } from './AchievementNotification';
 import { EnvironmentLayer, FloatingValues } from './effects';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
-  const { state, handleAction, handleChat, resetGame, loadState } = useGameState();
+  const { state, handleAction, handleChat, resetGame, loadState, updateAchievements } = useGameState();
   const { clearSave } = usePersistence(state, (loadedState) => {
     loadState(loadedState);
+    if (loadedState.achievements) {
+      loadAchievementState(loadedState.achievements);
+    }
   });
   const { theme, toggleTheme } = useDarkMode();
   const { notificationState, isLevelUpRecent, hideNotification } = useLevelUpNotification(state.parameters.level);
+
+  // 実績システム
+  const {
+    achievementState,
+    allAchievements,
+    currentNotification,
+    dismissNotification,
+    selectedTitle,
+    selectTitle,
+    unlockedCount,
+    totalCount,
+    processAction: processAchievementAction,
+    processChat: processAchievementChat,
+    processRestLimitHit,
+    processLogin,
+    loadAchievementState,
+    resetAchievements,
+  } = useAchievements(state.achievements);
+
+  // 実績モーダル
+  const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+
+  // ログイン処理（初回マウント時）
+  const hasProcessedLogin = useRef(false);
+  useEffect(() => {
+    if (mounted && !hasProcessedLogin.current) {
+      processLogin();
+      hasProcessedLogin.current = true;
+    }
+  }, [mounted, processLogin]);
+
+  // 実績状態をGameStateに同期（永続化用）
+  useEffect(() => {
+    updateAchievements(achievementState);
+  }, [achievementState, updateAchievements]);
 
   // 環境エフェクト
   const { timeOfDay } = useTimeOfDay();
@@ -84,12 +125,24 @@ export function GameContainer() {
 
   const handleActionWithScroll = (action: ActionType) => {
     // アクションが実行可能かチェック（canPerformActionを再利用して重複を排除）
-    const canExecute = canPerformAction(state.parameters, action);
+    const canExecute = canPerformAction(state.parameters, action, state.restLimit);
+
+    // 休憩の場合、上限に達しているかチェック（次のアクションで上限になる場合）
+    const remainingRest = getRemainingRestCount(state.restLimit);
+    const willHitRestLimit = action === 'rest' && remainingRest === 1;
 
     handleAction(action);
 
     // アクションが実行されない場合はスクロールやエフェクトを表示しない
     if (!canExecute) return;
+
+    // 実績処理
+    processAchievementAction(action, state.parameters);
+
+    // 休憩上限に達した場合
+    if (willHitRestLimit) {
+      processRestLimitHit();
+    }
 
     scrollToPetOnMobile();
 
@@ -127,6 +180,8 @@ export function GameContainer() {
     if (chatInput.trim()) {
       handleChat(chatInput.trim(), language);
       setChatInput('');
+      // 実績処理（チャット）
+      processAchievementChat(state.parameters);
     }
   };
 
@@ -134,6 +189,7 @@ export function GameContainer() {
     if (confirm(t('resetConfirm', language))) {
       await clearSave();
       resetGame();
+      resetAchievements();
     }
   };
 
@@ -231,9 +287,26 @@ export function GameContainer() {
                 parameters={state.parameters}
                 language={language}
                 isLevelUpRecent={isLevelUpRecent}
+                selectedTitle={selectedTitle}
               />
               <FloatingValues values={floatingValues} />
             </div>
+
+            {/* 実績ボタン */}
+            <button
+              onClick={() => setIsAchievementModalOpen(true)}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-md p-4 hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🏆</span>
+                  <span className="font-bold">{t('achievements', language)}</span>
+                </div>
+                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">
+                  {unlockedCount}/{totalCount}
+                </span>
+              </div>
+            </button>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
@@ -276,6 +349,25 @@ export function GameContainer() {
         newLevel={notificationState.newLevel}
         language={language}
         onClose={hideNotification}
+      />
+
+      <AchievementModal
+        isOpen={isAchievementModalOpen}
+        onClose={() => setIsAchievementModalOpen(false)}
+        achievements={allAchievements}
+        unlockedAchievements={achievementState.unlocked}
+        stats={achievementState.stats}
+        parameters={state.parameters}
+        selectedTitleId={achievementState.selectedTitleId}
+        onSelectTitle={selectTitle}
+        language={language}
+      />
+
+      <AchievementNotification
+        isVisible={currentNotification !== null}
+        achievement={currentNotification}
+        language={language}
+        onClose={dismissNotification}
       />
     </EnvironmentLayer>
   );

@@ -1,5 +1,6 @@
 import { GameState, GameParameters, ActionType, IntelligenceTier, MoodType, RestLimitState } from '@/types/game';
 import { GAME_CONSTANTS, ACTION_EFFECTS, INTELLIGENCE_THRESHOLDS } from './constants';
+import { getInitialAchievementState } from './achievementEngine';
 
 // 今日の日付をYYYY-MM-DD形式で取得（ローカルタイム基準）
 export function getTodayDateString(): string {
@@ -28,6 +29,7 @@ export function getInitialState(): GameState {
       count: 0,
       lastResetDate: getTodayDateString(),
     },
+    achievements: getInitialAchievementState(),
   };
 }
 

@@ -1,5 +1,7 @@
 import { GameState, RestLimitState } from '@/types/game';
+import { AchievementState } from '@/types/achievement';
 import { getTodayDateString } from './gameEngine';
+import { getInitialAchievementState } from './achievementEngine';
 
 /**
  * ユーザー入力をサニタイズしてXSS攻撃を防ぐ
@@ -46,6 +48,18 @@ function isValidRestLimit(restLimit: unknown): restLimit is RestLimitState {
   return typeof rl.count === 'number' && typeof rl.lastResetDate === 'string';
 }
 
+// 有効なAchievementStateかどうかをチェック
+function isValidAchievementState(achievements: unknown): achievements is AchievementState {
+  if (!achievements || typeof achievements !== 'object') return false;
+  const ach = achievements as Partial<AchievementState>;
+  return (
+    Array.isArray(ach.unlocked) &&
+    ach.stats !== undefined &&
+    typeof ach.stats === 'object' &&
+    Array.isArray(ach.pendingNotifications)
+  );
+}
+
 // 既存データのマイグレーション（restLimitがない場合に追加）
 export function migrateGameState(data: unknown): GameState | null {
   if (!data || typeof data !== 'object') return null;
@@ -75,6 +89,11 @@ export function migrateGameState(data: unknown): GameState | null {
     ? state.restLimit
     : { count: 0, lastResetDate: getTodayDateString() };
 
+  // achievementsがない場合はデフォルト値で補完
+  const achievements: AchievementState = isValidAchievementState(state.achievements)
+    ? state.achievements
+    : getInitialAchievementState();
+
   return {
     parameters: state.parameters,
     messages: state.messages,
@@ -82,6 +101,7 @@ export function migrateGameState(data: unknown): GameState | null {
     lastActionTime: state.lastActionTime,
     currentActivity: state.currentActivity,
     restLimit,
+    achievements,
   };
 }
 

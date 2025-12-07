@@ -8,6 +8,7 @@ import { usePersistence } from '@/hooks/usePersistence';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
+import { useAchievements } from '@/hooks/useAchievements';
 
 // Mock all hooks
 jest.mock('@/hooks/useGameState');
@@ -15,6 +16,7 @@ jest.mock('@/hooks/usePersistence');
 jest.mock('@/hooks/useDarkMode');
 jest.mock('@/hooks/useLanguage');
 jest.mock('@/hooks/useLevelUpNotification');
+jest.mock('@/hooks/useAchievements');
 
 // Mock effect hooks
 jest.mock('@/hooks/effects', () => ({
@@ -65,6 +67,14 @@ jest.mock('@/components/LevelUpNotification', () => ({
   LevelUpNotification: () => <div>Mock LevelUpNotification</div>
 }));
 
+jest.mock('@/components/AchievementModal', () => ({
+  AchievementModal: () => <div>Mock AchievementModal</div>
+}));
+
+jest.mock('@/components/AchievementNotification', () => ({
+  AchievementNotification: () => <div>Mock AchievementNotification</div>
+}));
+
 describe('GameContainer - Mobile Auto Scroll Feature', () => {
   const mockHandleAction = jest.fn();
   const mockHandleChat = jest.fn();
@@ -89,6 +99,47 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
     currentActivity: null,
     createdAt: Date.now(),
     lastActionTime: Date.now(),
+    restLimit: {
+      count: 0,
+      lastResetDate: '2025-01-01',
+    },
+    achievements: {
+      unlocked: [],
+      stats: {
+        talkCount: 0,
+        studyCount: 0,
+        playCount: 0,
+        restCount: 0,
+        totalActions: 0,
+        messagesSent: 0,
+        currentLoginStreak: 0,
+        maxLoginStreak: 0,
+        totalPlayDays: 0,
+        lastPlayDate: '',
+        restLimitHitDays: 0,
+        todayActions: [],
+        todayActionsDate: '',
+      },
+      selectedTitleId: null,
+      pendingNotifications: [],
+    },
+  };
+
+  const mockAchievementState = {
+    achievementState: mockGameState.achievements,
+    allAchievements: [],
+    currentNotification: null,
+    dismissNotification: jest.fn(),
+    selectedTitle: null,
+    selectTitle: jest.fn(),
+    unlockedCount: 0,
+    totalCount: 52,
+    processAction: jest.fn(),
+    processChat: jest.fn(),
+    processRestLimitHit: jest.fn(),
+    processLogin: jest.fn(),
+    loadAchievementState: jest.fn(),
+    resetAchievements: jest.fn(),
   };
 
   beforeEach(() => {
@@ -101,6 +152,7 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       handleChat: mockHandleChat,
       resetGame: mockResetGame,
       loadState: mockLoadState,
+      updateAchievements: jest.fn(),
     });
 
     (usePersistence as jest.Mock).mockReturnValue({
@@ -123,6 +175,8 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       isLevelUpRecent: false,
       hideNotification: mockHideNotification,
     });
+
+    (useAchievements as jest.Mock).mockReturnValue(mockAchievementState);
 
     // Mock scrollIntoView
     Element.prototype.scrollIntoView = jest.fn();

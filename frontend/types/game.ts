@@ -1,3 +1,5 @@
+import { AchievementState } from './achievement';
+
 export type ActionType = 'talk' | 'study' | 'play' | 'rest';
 
 export type MoodType = 'happy' | 'normal' | 'tired' | 'sad';
@@ -34,6 +36,7 @@ export interface GameState {
   lastActionTime: number;
   currentActivity?: ActionType | null;
   restLimit: RestLimitState;
+  achievements?: AchievementState;
 }
 
 export interface ActionEffect {

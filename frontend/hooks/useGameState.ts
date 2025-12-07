@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, ActionType, Message } from '@/types/game';
+import { AchievementState } from '@/types/achievement';
 import { getInitialState, processAction, getIntelligenceTier, applyPassiveDecay } from '@/lib/gameEngine';
 import { generateResponse } from '@/lib/responseEngine';
 import { GAME_CONSTANTS } from '@/lib/constants';
@@ -101,11 +102,20 @@ export function useGameState(initialState?: GameState) {
     setState(loadedState);
   }, []);
 
+  // 実績状態を更新（永続化用）
+  const updateAchievements = useCallback((achievements: AchievementState) => {
+    setState(prevState => ({
+      ...prevState,
+      achievements,
+    }));
+  }, []);
+
   return {
     state,
     handleAction,
     handleChat,
     resetGame,
     loadState,
+    updateAchievements,
   };
 }
