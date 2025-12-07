@@ -31,7 +31,7 @@ export function InventoryModal({
   // インベントリからアイテム情報を取得
   const itemsInCategory = inventory.items
     .map((invItem) => getItemById(invItem.itemId))
-    .filter((item): item is Item => item !== null && item.category === activeCategory);
+    .filter((item): item is Item => item != null && item.category === activeCategory);
 
   // 装備中アイテムを取得
   const equippedItemId = inventory.equipped[activeCategory];
