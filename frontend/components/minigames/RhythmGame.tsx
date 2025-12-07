@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { RhythmGameState } from '@/types/miniGame';
+import { RhythmGameState, NoteResult } from '@/types/miniGame';
 import { Language } from '@/hooks/useLanguage';
 import { RHYTHM_LANES } from '@/lib/miniGameDefinitions';
+
+// null を除外した判定結果型
+type JudgementType = Exclude<NoteResult, null>;
 
 interface RhythmGameProps {
   gameState: RhythmGameState;
@@ -28,7 +31,7 @@ const HIT_LINE_POSITION = 81.25; // (256 - 48) / 256 * 100
 const NOTE_TRAVEL_TIME = 2000;
 
 // 判定結果の色マッピング
-const JUDGEMENT_COLORS: Record<string, string> = {
+const JUDGEMENT_COLORS: Record<JudgementType, string> = {
   marvelous: '#FF00FF',
   excellent: '#FFD700',
   good: '#00FF00',
@@ -37,7 +40,7 @@ const JUDGEMENT_COLORS: Record<string, string> = {
 };
 
 // 判定結果の表示テキスト
-const JUDGEMENT_TEXT: Record<string, string> = {
+const JUDGEMENT_TEXT: Record<JudgementType, string> = {
   marvelous: 'MARVELOUS!',
   excellent: 'EXCELLENT!',
   good: 'GOOD',
@@ -58,6 +61,7 @@ export function RhythmGame({
   const [pressedLanes, setPressedLanes] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const pressTimeoutRefs = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   // カウントダウン＆開始
   useEffect(() => {
@@ -138,14 +142,30 @@ export function RhythmGame({
 
   // レーン押下エフェクト
   const triggerLanePress = useCallback((lane: number) => {
+    // 既存のタイムアウトをクリア
+    const existingTimeout = pressTimeoutRefs.current.get(lane);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
     setPressedLanes((prev) => new Set(prev).add(lane));
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       setPressedLanes((prev) => {
         const next = new Set(prev);
         next.delete(lane);
         return next;
       });
+      pressTimeoutRefs.current.delete(lane);
     }, 100);
+    pressTimeoutRefs.current.set(lane, timeout);
+  }, []);
+
+  // コンポーネントアンマウント時にタイムアウトをクリーンアップ
+  useEffect(() => {
+    return () => {
+      pressTimeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+      pressTimeoutRefs.current.clear();
+    };
   }, []);
 
   // キーボード入力

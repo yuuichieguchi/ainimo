@@ -51,7 +51,7 @@ export function GameContainer() {
     }
   });
   const { theme, toggleTheme } = useDarkMode();
-  const { notificationState, isLevelUpRecent, hideNotification } = useLevelUpNotification(state.parameters.level);
+  const { notificationState, isLevelUpRecent, hideNotification, resetNotificationState } = useLevelUpNotification(state.parameters.level);
 
   // 実績システム
   const {
@@ -273,6 +273,7 @@ export function GameContainer() {
       resetAchievements();
       resetInventory();
       updateMiniGames(getInitialMiniGameState());
+      resetNotificationState();
     }
   };
 

@@ -110,9 +110,21 @@ export function useLevelUpNotification(currentLevel: number) {
     }
   };
 
+  const resetNotificationState = () => {
+    setNotificationState({ isVisible: false, newLevel: 1 });
+    setIsLevelUpRecent(false);
+    isInitialMount.current = true;
+    try {
+      localStorage.removeItem(LAST_NOTIFIED_LEVEL_KEY);
+    } catch (error) {
+      console.warn('localStorage is not available:', error);
+    }
+  };
+
   return {
     notificationState,
     isLevelUpRecent,
     hideNotification,
+    resetNotificationState,
   };
 }
