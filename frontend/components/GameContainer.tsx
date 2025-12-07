@@ -110,21 +110,36 @@ export function GameContainer() {
   }, [mounted, processLogin]);
 
   // 実績状態をGameStateに同期（永続化用）
+  // ロード完了後のみ同期を行う（初期値で上書きしない）
+  const hasLoadedAchievements = useRef(false);
   useEffect(() => {
-    updateAchievements(achievementState);
+    if (state.achievements) {
+      hasLoadedAchievements.current = true;
+    }
+  }, [state.achievements]);
+
+  useEffect(() => {
+    if (hasLoadedAchievements.current) {
+      updateAchievements(achievementState);
+    }
   }, [achievementState, updateAchievements]);
 
-  // インベントリ状態をGameStateに同期（永続化用）
+  // 保存データからインベントリをロード（初回マウント時のみ）
+  const hasLoadedInventory = useRef(false);
   useEffect(() => {
-    updateInventory(inventory);
-  }, [inventory, updateInventory]);
-
-  // 保存データからインベントリをロード
-  useEffect(() => {
-    if (state.inventory) {
+    if (!hasLoadedInventory.current && state.inventory) {
       loadInventory(state.inventory);
+      hasLoadedInventory.current = true;
     }
-  }, []);
+  }, [state.inventory, loadInventory]);
+
+  // インベントリ状態をGameStateに同期（永続化用）
+  // ロード完了後のみ同期を行う
+  useEffect(() => {
+    if (hasLoadedInventory.current) {
+      updateInventory(inventory);
+    }
+  }, [inventory, updateInventory]);
 
   // 環境エフェクト
   const { timeOfDay } = useTimeOfDay();
@@ -438,6 +453,8 @@ export function GameContainer() {
         personalityState={personalityState}
         onEnergySpent={spendEnergy}
         onRewardsEarned={handleMiniGameRewards}
+        onMiniGameStateChange={updateMiniGames}
+        savedMiniGameState={state.miniGames}
         language={language}
       />
 

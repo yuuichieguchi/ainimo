@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { MiniGameType, GameResult as GameResultType, ActiveGameState } from '@/types/miniGame';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { MiniGameType, MiniGameState, GameResult as GameResultType, ActiveGameState } from '@/types/miniGame';
 import { IntelligenceTier } from '@/types/game';
 import { PersonalityState } from '@/types/personality';
 import { Language } from '@/hooks/useLanguage';
@@ -23,6 +23,8 @@ interface MiniGameModalProps {
   personalityState?: PersonalityState;
   onEnergySpent: (amount: number) => void;
   onRewardsEarned: (xp: number, coins: number, itemId: string | null) => void;
+  onMiniGameStateChange: (state: MiniGameState) => void;
+  savedMiniGameState?: MiniGameState;
   language: Language;
 }
 
@@ -36,6 +38,8 @@ export function MiniGameModal({
   personalityState,
   onEnergySpent,
   onRewardsEarned,
+  onMiniGameStateChange,
+  savedMiniGameState,
   language,
 }: MiniGameModalProps) {
   const [view, setView] = useState<ModalView>('selector');
@@ -58,7 +62,22 @@ export function MiniGameModal({
     missNote,
     moveTile,
     answerQuestion,
+    loadMiniGameState,
   } = useMiniGames();
+
+  // 保存されたミニゲーム状態をロード（初回マウント時のみ）
+  const hasLoadedMiniGameState = useRef(false);
+  useEffect(() => {
+    if (!hasLoadedMiniGameState.current && savedMiniGameState) {
+      loadMiniGameState(savedMiniGameState);
+      hasLoadedMiniGameState.current = true;
+    }
+  }, [savedMiniGameState, loadMiniGameState]);
+
+  // ミニゲーム状態が変更されたら親に通知
+  useEffect(() => {
+    onMiniGameStateChange(miniGameState);
+  }, [miniGameState, onMiniGameStateChange]);
 
   // モーダルが閉じられたらリセット
   useEffect(() => {
