@@ -10,7 +10,7 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { useTimeOfDay, useWeather, useSeason, useFloatingValues } from '@/hooks/effects';
 import { t } from '@/lib/i18n';
 import { ActionType, IntelligenceTier } from '@/types/game';
-import { getIntelligenceTier, canPerformAction, getRemainingRestCount } from '@/lib/gameEngine';
+import { getIntelligenceTier, getRemainingRestCount } from '@/lib/gameEngine';
 import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { computePersonalityState, getInitialPersonalityData } from '@/lib/personalityEngine';
 import { useMiniGames } from '@/hooks/useMiniGames';
@@ -241,20 +241,18 @@ export function GameContainer() {
   }, []);
 
   const handleActionWithScroll = (action: ActionType) => {
-    // アクションが実行可能かチェック（canPerformActionを再利用して重複を排除）
-    const canExecute = canPerformAction(state.parameters, action, state.restLimit);
-
     // 休憩の場合、上限に達しているかチェック（次のアクションで上限になる場合）
     const remainingRest = getRemainingRestCount(state.restLimit);
     const willHitRestLimit = action === 'rest' && remainingRest === 1;
 
-    handleAction(action);
+    // handleActionは更新後のパラメータを返す（アクションが実行されなかった場合はnull）
+    const newParameters = handleAction(action);
 
     // アクションが実行されない場合はスクロールやエフェクトを表示しない
-    if (!canExecute) return;
+    if (!newParameters) return;
 
-    // 実績処理
-    processAchievementAction(action, state.parameters);
+    // 実績処理（更新後のパラメータを使用）
+    processAchievementAction(action, newParameters);
 
     // 休憩上限に達した場合
     if (willHitRestLimit) {
@@ -394,11 +392,11 @@ export function GameContainer() {
                   placeholder={t('typeMessage', language)}
                   maxLength={500}
                   className="flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={state.parameters.energy < 20}
+                  disabled={state.parameters.energy < Math.abs(ACTION_EFFECTS.talk.energy)}
                 />
                 <button
                   type="submit"
-                  disabled={!chatInput.trim() || state.parameters.energy < 20}
+                  disabled={!chatInput.trim() || state.parameters.energy < Math.abs(ACTION_EFFECTS.talk.energy)}
                   className="px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {t('send', language)}

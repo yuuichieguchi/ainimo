@@ -119,7 +119,7 @@ jest.mock('@/components/shop', () => ({
 }));
 
 describe('GameContainer - Mobile Auto Scroll Feature', () => {
-  const mockHandleAction = jest.fn();
+  let mockHandleAction: jest.Mock;
   const mockHandleChat = jest.fn();
   const mockResetGame = jest.fn();
   const mockLoadState = jest.fn();
@@ -189,6 +189,8 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
     jest.clearAllMocks();
 
     // Setup mock implementations
+    // handleActionは更新後のパラメータを返すように修正
+    mockHandleAction = jest.fn().mockReturnValue(mockGameState.parameters);
     (useGameState as jest.Mock).mockReturnValue({
       state: mockGameState,
       handleAction: mockHandleAction,

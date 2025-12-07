@@ -5,7 +5,7 @@ import { ActionType, RestLimitState } from '@/types/game';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
 import { getRemainingRestCount } from '@/lib/gameEngine';
-import { GAME_CONSTANTS } from '@/lib/constants';
+import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { Tooltip } from '@/components/Tooltip';
 import { useTooltip } from '@/hooks/useTooltip';
 
@@ -26,7 +26,6 @@ export function ActionsModal({
   restLimit,
   language,
 }: ActionsModalProps) {
-  const isLowEnergy = energy < GAME_CONSTANTS.ENERGY_THRESHOLD;
   const remainingRest = getRemainingRestCount(restLimit);
   const isRestDisabled = remainingRest <= 0;
   const restTooltip = useTooltip({ id: 'rest-modal-tooltip', isMobile: false });
@@ -123,8 +122,9 @@ export function ActionsModal({
 
         <div className="space-y-3">
           {actions.map(({ action, label, icon, color, description }) => {
+            const requiredEnergy = action === 'rest' ? 0 : Math.abs(ACTION_EFFECTS[action].energy);
             const isActionDisabled =
-              (isLowEnergy && action !== 'rest') ||
+              (action !== 'rest' && energy < requiredEnergy) ||
               (action === 'rest' && isRestDisabled);
 
             return (

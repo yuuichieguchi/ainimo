@@ -151,7 +151,8 @@ export function canPerformAction(
     if (!restLimit) return true;
     return getRemainingRestCount(restLimit) > 0;
   }
-  return parameters.energy >= GAME_CONSTANTS.ENERGY_THRESHOLD;
+  const requiredEnergy = Math.abs(ACTION_EFFECTS[action].energy);
+  return parameters.energy >= requiredEnergy;
 }
 
 export function processAction(

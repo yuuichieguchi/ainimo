@@ -211,36 +211,42 @@ describe('gameEngine', () => {
       expect(canPerformAction(params, 'rest')).toBe(true);
     });
 
-    it('should block actions when energy < 20', () => {
-      const params: GameParameters = {
+    it('should block actions when energy is below required cost', () => {
+      const baseParams: GameParameters = {
         level: 1,
         xp: 0,
         intelligence: 10,
         memory: 5,
         friendliness: 50,
-        energy: 15,
+        energy: 0,
         mood: 60,
       };
 
-      expect(canPerformAction(params, 'talk')).toBe(false);
-      expect(canPerformAction(params, 'study')).toBe(false);
-      expect(canPerformAction(params, 'play')).toBe(false);
+      // talk requires 10 energy
+      expect(canPerformAction({ ...baseParams, energy: 9 }, 'talk')).toBe(false);
+      // study requires 15 energy
+      expect(canPerformAction({ ...baseParams, energy: 14 }, 'study')).toBe(false);
+      // play requires 20 energy
+      expect(canPerformAction({ ...baseParams, energy: 19 }, 'play')).toBe(false);
     });
 
-    it('should allow actions when energy >= 20', () => {
-      const params: GameParameters = {
+    it('should allow actions when energy meets required cost', () => {
+      const baseParams: GameParameters = {
         level: 1,
         xp: 0,
         intelligence: 10,
         memory: 5,
         friendliness: 50,
-        energy: 20,
+        energy: 0,
         mood: 60,
       };
 
-      expect(canPerformAction(params, 'talk')).toBe(true);
-      expect(canPerformAction(params, 'study')).toBe(true);
-      expect(canPerformAction(params, 'play')).toBe(true);
+      // talk requires 10 energy
+      expect(canPerformAction({ ...baseParams, energy: 10 }, 'talk')).toBe(true);
+      // study requires 15 energy
+      expect(canPerformAction({ ...baseParams, energy: 15 }, 'study')).toBe(true);
+      // play requires 20 energy
+      expect(canPerformAction({ ...baseParams, energy: 20 }, 'play')).toBe(true);
     });
   });
 

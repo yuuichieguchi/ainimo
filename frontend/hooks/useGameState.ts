@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, ActionType, Message } from '@/types/game';
+import { GameState, ActionType, Message, GameParameters } from '@/types/game';
 import { AchievementState } from '@/types/achievement';
 import { PersonalityData } from '@/types/personality';
 import { MiniGameState } from '@/types/miniGame';
@@ -39,7 +39,9 @@ export function useGameState(initialState?: GameState) {
     };
   }, [state.currentActivity]);
 
-  const handleAction = useCallback((action: ActionType) => {
+  const handleAction = useCallback((action: ActionType): GameParameters | null => {
+    let newParameters: GameParameters | null = null;
+
     setState((prevState) => {
       const decayedState = applyPassiveDecay(prevState);
 
@@ -54,6 +56,10 @@ export function useGameState(initialState?: GameState) {
       // アクションが実行された場合のみcurrentActivityをセット
       const actionExecuted = newState !== decayedState;
 
+      if (actionExecuted) {
+        newParameters = newState.parameters;
+      }
+
       if (actionExecuted && (action === 'study' || action === 'play' || action === 'rest')) {
         return {
           ...newState,
@@ -67,6 +73,8 @@ export function useGameState(initialState?: GameState) {
         personality: newPersonalityData,
       };
     });
+
+    return newParameters;
   }, []);
 
   const handleChat = useCallback((userInput: string, language: Language) => {

@@ -5,7 +5,7 @@ import { ActionType, RestLimitState } from '@/types/game';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
 import { getRemainingRestCount } from '@/lib/gameEngine';
-import { GAME_CONSTANTS } from '@/lib/constants';
+import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { Tooltip } from '@/components/Tooltip';
 import { useTooltip } from '@/hooks/useTooltip';
 
@@ -19,7 +19,6 @@ interface ActionButtonsProps {
 
 export function ActionButtons({ onAction, energy, restLimit, disabled = false, language }: ActionButtonsProps) {
   const [isMobile, setIsMobile] = useState(false);
-  const isLowEnergy = energy < GAME_CONSTANTS.ENERGY_THRESHOLD;
   const remainingRest = getRemainingRestCount(restLimit);
   const isRestDisabled = remainingRest <= 0;
 
@@ -41,8 +40,9 @@ export function ActionButtons({ onAction, energy, restLimit, disabled = false, l
   return (
     <div className="grid grid-cols-3 gap-3">
       {buttons.map(({ action, label, icon, color }) => {
+        const requiredEnergy = action === 'rest' ? 0 : Math.abs(ACTION_EFFECTS[action].energy);
         const isActionDisabled = disabled ||
-          (isLowEnergy && action !== 'rest') ||
+          (action !== 'rest' && energy < requiredEnergy) ||
           (action === 'rest' && isRestDisabled);
 
         return (
