@@ -121,11 +121,6 @@ export function BottomToolbar({
               }`}
             >
               <span className="text-xl">{item.icon}</span>
-              {item.label && (
-                <span className="text-[10px] font-medium">
-                  {item.label}
-                </span>
-              )}
               {item.badge && (
                 <span className={`text-[10px] ${item.color ? 'opacity-80' : ''}`}>
                   {item.badge}
