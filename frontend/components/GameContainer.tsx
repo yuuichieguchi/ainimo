@@ -81,6 +81,8 @@ export function GameContainer() {
     inventory,
     addItem,
     addManyCoins,
+    equip,
+    unequip,
     loadInventory,
     resetInventory,
   } = useInventory();
@@ -480,6 +482,9 @@ export function GameContainer() {
         isOpen={isInventoryModalOpen}
         onClose={() => setIsInventoryModalOpen(false)}
         language={language}
+        inventory={inventory}
+        onEquip={equip}
+        onUnequip={unequip}
       />
     </EnvironmentLayer>
   );

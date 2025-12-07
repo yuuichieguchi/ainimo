@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { ItemCategory, CATEGORY_NAMES, Item } from '@/types/item';
+import { ItemCategory, CATEGORY_NAMES, Item, PlayerInventory } from '@/types/item';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
 import { ItemCard } from './ItemCard';
-import { useInventory } from '@/hooks/useInventory';
-import { getItemById } from '@/lib/itemDefinitions';
+import { getItemById, getItemsByCategory } from '@/lib/itemDefinitions';
 
 interface InventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
+  inventory: PlayerInventory;
+  onEquip: (itemId: string) => boolean;
+  onUnequip: (category: ItemCategory) => void;
 }
 
 const CATEGORIES: ItemCategory[] = ['hat', 'accessory', 'background'];
@@ -20,33 +22,39 @@ export function InventoryModal({
   isOpen,
   onClose,
   language,
+  inventory,
+  onEquip,
+  onUnequip,
 }: InventoryModalProps) {
   const [activeCategory, setActiveCategory] = useState<ItemCategory>('hat');
 
-  const {
-    inventory,
-    coins,
-    equip,
-    unequip,
-    getItemsInCategory,
-    getEquipped,
-    getProgress,
-  } = useInventory();
+  // インベントリからアイテム情報を取得
+  const itemsInCategory = inventory.items
+    .map((invItem) => getItemById(invItem.itemId))
+    .filter((item): item is Item => item !== null && item.category === activeCategory);
 
-  const itemsInCategory = getItemsInCategory(activeCategory);
-  const equippedItem = getEquipped(activeCategory);
-  const progress = getProgress();
+  // 装備中アイテムを取得
+  const equippedItemId = inventory.equipped[activeCategory];
+  const equippedItem = equippedItemId ? getItemById(equippedItemId) : null;
+
+  // コレクション進捗を計算
+  const uniqueItemIds = new Set(inventory.items.map((i) => i.itemId));
+  const allItems = getItemsByCategory('hat').length + getItemsByCategory('accessory').length + getItemsByCategory('background').length;
+  const progress = {
+    collected: uniqueItemIds.size,
+    total: allItems,
+  };
 
   const handleEquip = useCallback(
     (itemId: string) => {
-      equip(itemId);
+      onEquip(itemId);
     },
-    [equip]
+    [onEquip]
   );
 
   const handleUnequip = useCallback(() => {
-    unequip(activeCategory);
-  }, [unequip, activeCategory]);
+    onUnequip(activeCategory);
+  }, [onUnequip, activeCategory]);
 
   if (!isOpen) return null;
 
@@ -77,7 +85,7 @@ export function InventoryModal({
           {/* コイン表示 */}
           <div className="flex justify-between items-center mt-2 text-sm">
             <span className="text-yellow-500 font-bold">
-              🪙 {coins} {t('inventoryCoins', language)}
+              🪙 {inventory.coins} {t('inventoryCoins', language)}
             </span>
             <span className="text-gray-500 dark:text-gray-400">
               {t('inventoryCollection', language)}: {progress.collected}/{progress.total}
