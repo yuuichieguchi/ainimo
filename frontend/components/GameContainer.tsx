@@ -13,7 +13,7 @@ import { ActionType, IntelligenceTier } from '@/types/game';
 import { getIntelligenceTier, canPerformAction, getRemainingRestCount } from '@/lib/gameEngine';
 import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { computePersonalityState, getInitialPersonalityData } from '@/lib/personalityEngine';
-import { getInitialMiniGameState } from '@/lib/miniGameDefinitions';
+import { useMiniGames } from '@/hooks/useMiniGames';
 import { useInventory } from '@/hooks/useInventory';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
@@ -101,6 +101,27 @@ export function GameContainer() {
     resetInventory,
   } = useInventory();
 
+  // ミニゲームフック
+  const {
+    miniGameState,
+    activeGame,
+    canPlay,
+    startGame,
+    endGame,
+    cancelGame,
+    getCooldownRemaining,
+    getEnergyCost,
+    flipCard,
+    resetCards,
+    beginRhythm,
+    hitNote,
+    missNote,
+    moveTile,
+    answerQuestion,
+    loadMiniGameState,
+    resetMiniGames,
+  } = useMiniGames();
+
   // ログイン処理（初回マウント時）
   const hasProcessedLogin = useRef(false);
   useEffect(() => {
@@ -135,12 +156,27 @@ export function GameContainer() {
   }, [state.inventory, loadInventory]);
 
   // インベントリ状態をGameStateに同期（永続化用）
-  // ロード完了後のみ同期を行う
   useEffect(() => {
     if (hasLoadedInventory.current) {
       updateInventory(inventory);
     }
   }, [inventory, updateInventory]);
+
+  // 保存データからミニゲーム状態をロード（初回マウント時のみ）
+  const hasLoadedMiniGames = useRef(false);
+  useEffect(() => {
+    if (!hasLoadedMiniGames.current && state.miniGames) {
+      loadMiniGameState(state.miniGames);
+      hasLoadedMiniGames.current = true;
+    }
+  }, [state.miniGames, loadMiniGameState]);
+
+  // ミニゲーム状態をGameStateに同期（永続化用）
+  useEffect(() => {
+    if (hasLoadedMiniGames.current) {
+      updateMiniGames(miniGameState);
+    }
+  }, [miniGameState, updateMiniGames]);
 
   // 環境エフェクト
   const { timeOfDay } = useTimeOfDay();
@@ -272,7 +308,7 @@ export function GameContainer() {
       resetGame();
       resetAchievements();
       resetInventory();
-      updateMiniGames(getInitialMiniGameState());
+      resetMiniGames();
       resetNotificationState();
     }
   };
@@ -456,9 +492,20 @@ export function GameContainer() {
         personalityState={personalityState}
         onEnergySpent={spendEnergy}
         onRewardsEarned={handleMiniGameRewards}
-        onMiniGameStateChange={updateMiniGames}
-        savedMiniGameState={state.miniGames}
         language={language}
+        activeGame={activeGame}
+        canPlay={canPlay}
+        startGame={startGame}
+        endGame={endGame}
+        cancelGame={cancelGame}
+        getCooldownRemaining={getCooldownRemaining}
+        flipCard={flipCard}
+        resetCards={resetCards}
+        beginRhythm={beginRhythm}
+        hitNote={hitNote}
+        missNote={missNote}
+        moveTile={moveTile}
+        answerQuestion={answerQuestion}
       />
 
       <InventoryModal

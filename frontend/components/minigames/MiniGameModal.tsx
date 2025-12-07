@@ -1,7 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { MiniGameType, MiniGameState, GameResult as GameResultType, ActiveGameState } from '@/types/miniGame';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  MiniGameType,
+  GameResult as GameResultType,
+  ActiveGameState,
+  CanPlayResult,
+} from '@/types/miniGame';
 import { IntelligenceTier } from '@/types/game';
 import { PersonalityState } from '@/types/personality';
 import { Language } from '@/hooks/useLanguage';
@@ -13,7 +18,6 @@ import { MemoryGame } from './MemoryGame';
 import { RhythmGame } from './RhythmGame';
 import { PuzzleGame } from './PuzzleGame';
 import { QuizGame } from './QuizGame';
-import { useMiniGames } from '@/hooks/useMiniGames';
 
 interface MiniGameModalProps {
   isOpen: boolean;
@@ -23,9 +27,20 @@ interface MiniGameModalProps {
   personalityState?: PersonalityState;
   onEnergySpent: (amount: number) => void;
   onRewardsEarned: (xp: number, coins: number, itemId: string | null) => void;
-  onMiniGameStateChange: (state: MiniGameState) => void;
-  savedMiniGameState?: MiniGameState;
   language: Language;
+  activeGame: ActiveGameState | null;
+  canPlay: (gameType: MiniGameType, energy: number) => CanPlayResult;
+  startGame: (gameType: MiniGameType, tier: IntelligenceTier) => boolean;
+  endGame: (tier: IntelligenceTier, personalityState?: PersonalityState) => GameResultType | null;
+  cancelGame: () => void;
+  getCooldownRemaining: (gameType: MiniGameType) => number;
+  flipCard: (index: number) => void;
+  resetCards: () => void;
+  beginRhythm: () => void;
+  hitNote: (lane: number) => void;
+  missNote: () => void;
+  moveTile: (index: number) => void;
+  answerQuestion: (index: number) => void;
 }
 
 type ModalView = 'selector' | 'playing' | 'result';
@@ -38,53 +53,25 @@ export function MiniGameModal({
   personalityState,
   onEnergySpent,
   onRewardsEarned,
-  onMiniGameStateChange,
-  savedMiniGameState,
   language,
+  activeGame,
+  canPlay,
+  startGame,
+  endGame,
+  cancelGame,
+  getCooldownRemaining,
+  flipCard,
+  resetCards,
+  beginRhythm,
+  hitNote,
+  missNote,
+  moveTile,
+  answerQuestion,
 }: MiniGameModalProps) {
   const [view, setView] = useState<ModalView>('selector');
   const [result, setResult] = useState<GameResultType | null>(null);
   const [selectedGameType, setSelectedGameType] = useState<MiniGameType | null>(null);
 
-  const {
-    miniGameState,
-    activeGame,
-    canPlay,
-    startGame,
-    endGame,
-    cancelGame,
-    getCooldownRemaining,
-    getEnergyCost,
-    flipCard,
-    resetCards,
-    beginRhythm,
-    hitNote,
-    missNote,
-    moveTile,
-    answerQuestion,
-    loadMiniGameState,
-  } = useMiniGames();
-
-  // 保存されたミニゲーム状態をロード（初回マウント時のみ）
-  const hasLoadedMiniGameState = useRef(false);
-  useEffect(() => {
-    // savedMiniGameStateがある場合のみロード、ない場合は初期状態を使用
-    if (!hasLoadedMiniGameState.current) {
-      if (savedMiniGameState) {
-        loadMiniGameState(savedMiniGameState);
-      }
-      hasLoadedMiniGameState.current = true;
-    }
-  }, [savedMiniGameState, loadMiniGameState]);
-
-  // ミニゲーム状態が変更されたら親に通知（ロード完了後のみ）
-  useEffect(() => {
-    if (hasLoadedMiniGameState.current) {
-      onMiniGameStateChange(miniGameState);
-    }
-  }, [miniGameState, onMiniGameStateChange]);
-
-  // モーダルが閉じられたらリセット
   useEffect(() => {
     if (!isOpen) {
       setView('selector');
@@ -94,7 +81,6 @@ export function MiniGameModal({
     }
   }, [isOpen, cancelGame]);
 
-  // ゲーム選択
   const handleSelectGame = useCallback(
     (gameType: MiniGameType) => {
       const playResult = canPlay(gameType, energy);
@@ -111,7 +97,6 @@ export function MiniGameModal({
     [canPlay, energy, onEnergySpent, startGame, tier]
   );
 
-  // ゲーム完了
   const handleGameComplete = useCallback(() => {
     const gameResult = endGame(tier, personalityState);
     if (gameResult) {
@@ -121,7 +106,6 @@ export function MiniGameModal({
     }
   }, [endGame, tier, personalityState, onRewardsEarned]);
 
-  // もう一度プレイ
   const handlePlayAgain = useCallback(() => {
     setResult(null);
     setView('selector');
@@ -180,15 +164,12 @@ export function MiniGameModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* オーバーレイ */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={view === 'selector' ? onClose : undefined}
       />
 
-      {/* モーダル */}
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* ヘッダー */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">
             {view === 'selector' && t('miniGames', language)}
@@ -205,7 +186,6 @@ export function MiniGameModal({
           )}
         </div>
 
-        {/* コンテンツ */}
         <div className="p-4">
           {view === 'selector' && (
             <MiniGameSelector
