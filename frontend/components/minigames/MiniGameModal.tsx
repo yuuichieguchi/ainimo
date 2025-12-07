@@ -68,15 +68,20 @@ export function MiniGameModal({
   // 保存されたミニゲーム状態をロード（初回マウント時のみ）
   const hasLoadedMiniGameState = useRef(false);
   useEffect(() => {
-    if (!hasLoadedMiniGameState.current && savedMiniGameState) {
-      loadMiniGameState(savedMiniGameState);
+    // savedMiniGameStateがある場合のみロード、ない場合は初期状態を使用
+    if (!hasLoadedMiniGameState.current) {
+      if (savedMiniGameState) {
+        loadMiniGameState(savedMiniGameState);
+      }
       hasLoadedMiniGameState.current = true;
     }
   }, [savedMiniGameState, loadMiniGameState]);
 
-  // ミニゲーム状態が変更されたら親に通知
+  // ミニゲーム状態が変更されたら親に通知（ロード完了後のみ）
   useEffect(() => {
-    onMiniGameStateChange(miniGameState);
+    if (hasLoadedMiniGameState.current) {
+      onMiniGameStateChange(miniGameState);
+    }
   }, [miniGameState, onMiniGameStateChange]);
 
   // モーダルが閉じられたらリセット

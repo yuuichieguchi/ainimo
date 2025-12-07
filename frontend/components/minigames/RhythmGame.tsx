@@ -55,6 +55,7 @@ export function RhythmGame({
 }: RhythmGameProps) {
   const [countdown, setCountdown] = useState(3);
   const [currentTime, setCurrentTime] = useState(0);
+  const [pressedLanes, setPressedLanes] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
 
@@ -135,6 +136,18 @@ export function RhythmGame({
     return () => clearInterval(interval);
   }, [isPlaying, notes, currentNoteIndex, startTime, onMissNote]);
 
+  // レーン押下エフェクト
+  const triggerLanePress = useCallback((lane: number) => {
+    setPressedLanes((prev) => new Set(prev).add(lane));
+    setTimeout(() => {
+      setPressedLanes((prev) => {
+        const next = new Set(prev);
+        next.delete(lane);
+        return next;
+      });
+    }, 100);
+  }, []);
+
   // キーボード入力
   useEffect(() => {
     if (!gameState.isPlaying) return;
@@ -143,21 +156,23 @@ export function RhythmGame({
       const key = e.key.toUpperCase();
       const laneIndex = LANE_KEYS.indexOf(key);
       if (laneIndex !== -1) {
+        triggerLanePress(laneIndex);
         onHitNote(laneIndex);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState.isPlaying, onHitNote]);
+  }, [gameState.isPlaying, onHitNote, triggerLanePress]);
 
   // レーンボタンクリック
   const handleLaneClick = useCallback(
     (lane: number) => {
       if (!gameState.isPlaying) return;
+      triggerLanePress(lane);
       onHitNote(lane);
     },
-    [gameState.isPlaying, onHitNote]
+    [gameState.isPlaying, onHitNote, triggerLanePress]
   );
 
   // ノート位置計算（currentTimeを使用して60fpsで更新）
@@ -272,7 +287,12 @@ export function RhythmGame({
             <button
               key={lane}
               onClick={() => handleLaneClick(lane)}
-              className={`flex-1 h-12 bg-gradient-to-b ${LANE_COLORS[lane]} opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-lg border-r border-gray-800`}
+              className={`flex-1 h-12 bg-gradient-to-b ${LANE_COLORS[lane]} transition-all duration-75 flex items-center justify-center text-white font-bold text-lg border-r border-gray-800 ${
+                pressedLanes.has(lane)
+                  ? 'opacity-100 scale-95 brightness-125'
+                  : 'opacity-80 hover:opacity-100'
+              }`}
+              style={pressedLanes.has(lane) ? { boxShadow: '0 0 20px rgba(255,255,255,0.5) inset' } : undefined}
             >
               {LANE_KEYS[lane]}
             </button>

@@ -13,6 +13,7 @@ import { ActionType, IntelligenceTier } from '@/types/game';
 import { getIntelligenceTier, canPerformAction, getRemainingRestCount } from '@/lib/gameEngine';
 import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { computePersonalityState, getInitialPersonalityData } from '@/lib/personalityEngine';
+import { getInitialMiniGameState } from '@/lib/miniGameDefinitions';
 import { useInventory } from '@/hooks/useInventory';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
@@ -271,6 +272,7 @@ export function GameContainer() {
       resetGame();
       resetAchievements();
       resetInventory();
+      updateMiniGames(getInitialMiniGameState());
     }
   };
 
