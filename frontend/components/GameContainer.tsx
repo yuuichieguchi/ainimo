@@ -13,6 +13,7 @@ import { ActionType, IntelligenceTier } from '@/types/game';
 import { getIntelligenceTier, canPerformAction, getRemainingRestCount } from '@/lib/gameEngine';
 import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
 import { computePersonalityState, getInitialPersonalityData } from '@/lib/personalityEngine';
+import { useInventory } from '@/hooks/useInventory';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
@@ -22,10 +23,23 @@ import { AchievementModal } from './AchievementModal';
 import { AchievementNotification } from './AchievementNotification';
 import { PersonalityBadge } from './PersonalityBadge';
 import { EnvironmentLayer, FloatingValues } from './effects';
+import { MiniGameModal } from './minigames';
+import { EquipmentPanel, InventoryModal } from './inventory';
 
 export function GameContainer() {
   const { language, toggleLanguage, mounted } = useLanguage();
-  const { state, handleAction, handleChat, resetGame, loadState, updateAchievements } = useGameState();
+  const {
+    state,
+    handleAction,
+    handleChat,
+    resetGame,
+    loadState,
+    updateAchievements,
+    updateMiniGames,
+    updateInventory,
+    spendEnergy,
+    addXp,
+  } = useGameState();
   const { clearSave } = usePersistence(state, (loadedState) => {
     loadState(loadedState);
     if (loadedState.achievements) {
@@ -56,6 +70,21 @@ export function GameContainer() {
   // 実績モーダル
   const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
 
+  // ミニゲームモーダル
+  const [isMiniGameModalOpen, setIsMiniGameModalOpen] = useState(false);
+
+  // インベントリモーダル
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+
+  // インベントリフック
+  const {
+    inventory,
+    addItem,
+    addManyCoins,
+    loadInventory,
+    resetInventory,
+  } = useInventory();
+
   // ログイン処理（初回マウント時）
   const hasProcessedLogin = useRef(false);
   useEffect(() => {
@@ -69,6 +98,18 @@ export function GameContainer() {
   useEffect(() => {
     updateAchievements(achievementState);
   }, [achievementState, updateAchievements]);
+
+  // インベントリ状態をGameStateに同期（永続化用）
+  useEffect(() => {
+    updateInventory(inventory);
+  }, [inventory, updateInventory]);
+
+  // 保存データからインベントリをロード
+  useEffect(() => {
+    if (state.inventory) {
+      loadInventory(state.inventory);
+    }
+  }, []);
 
   // 環境エフェクト
   const { timeOfDay } = useTimeOfDay();
@@ -199,8 +240,21 @@ export function GameContainer() {
       await clearSave();
       resetGame();
       resetAchievements();
+      resetInventory();
     }
   };
+
+  // ミニゲーム報酬ハンドラ
+  const handleMiniGameRewards = useCallback(
+    (xp: number, coins: number, itemId: string | null) => {
+      addXp(xp);
+      addManyCoins(coins);
+      if (itemId) {
+        addItem(itemId);
+      }
+    },
+    [addXp, addManyCoins, addItem]
+  );
 
   if (!mounted) {
     return null;
@@ -310,6 +364,29 @@ export function GameContainer() {
               language={language}
             />
 
+            {/* ミニゲームボタン */}
+            <button
+              onClick={() => setIsMiniGameModalOpen(true)}
+              className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl shadow-md p-4 hover:from-green-600 hover:to-teal-600 transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🎮</span>
+                  <span className="font-bold">{t('miniGames', language)}</span>
+                </div>
+                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">
+                  ⚡ {state.parameters.energy}
+                </span>
+              </div>
+            </button>
+
+            {/* インベントリパネル */}
+            <EquipmentPanel
+              equipped={inventory.equipped}
+              onOpenInventory={() => setIsInventoryModalOpen(true)}
+              language={language}
+            />
+
             {/* 実績ボタン */}
             <button
               onClick={() => setIsAchievementModalOpen(true)}
@@ -386,6 +463,23 @@ export function GameContainer() {
         achievement={currentNotification}
         language={language}
         onClose={dismissNotification}
+      />
+
+      <MiniGameModal
+        isOpen={isMiniGameModalOpen}
+        onClose={() => setIsMiniGameModalOpen(false)}
+        energy={state.parameters.energy}
+        tier={getIntelligenceTier(state.parameters.intelligence)}
+        personalityState={personalityState}
+        onEnergySpent={spendEnergy}
+        onRewardsEarned={handleMiniGameRewards}
+        language={language}
+      />
+
+      <InventoryModal
+        isOpen={isInventoryModalOpen}
+        onClose={() => setIsInventoryModalOpen(false)}
+        language={language}
       />
     </EnvironmentLayer>
   );

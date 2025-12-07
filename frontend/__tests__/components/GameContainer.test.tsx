@@ -9,6 +9,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useLevelUpNotification } from '@/hooks/useLevelUpNotification';
 import { useAchievements } from '@/hooks/useAchievements';
+import { useInventory } from '@/hooks/useInventory';
 
 // Mock all hooks
 jest.mock('@/hooks/useGameState');
@@ -17,6 +18,7 @@ jest.mock('@/hooks/useDarkMode');
 jest.mock('@/hooks/useLanguage');
 jest.mock('@/hooks/useLevelUpNotification');
 jest.mock('@/hooks/useAchievements');
+jest.mock('@/hooks/useInventory');
 
 // Mock effect hooks
 jest.mock('@/hooks/effects', () => ({
@@ -77,6 +79,15 @@ jest.mock('@/components/AchievementNotification', () => ({
 
 jest.mock('@/components/PersonalityBadge', () => ({
   PersonalityBadge: () => <div data-testid="personality-badge">Mock PersonalityBadge</div>
+}));
+
+jest.mock('@/components/minigames', () => ({
+  MiniGameModal: () => <div data-testid="minigame-modal">Mock MiniGameModal</div>
+}));
+
+jest.mock('@/components/inventory', () => ({
+  EquipmentPanel: () => <div data-testid="equipment-panel">Mock EquipmentPanel</div>,
+  InventoryModal: () => <div data-testid="inventory-modal">Mock InventoryModal</div>
 }));
 
 describe('GameContainer - Mobile Auto Scroll Feature', () => {
@@ -157,6 +168,22 @@ describe('GameContainer - Mobile Auto Scroll Feature', () => {
       resetGame: mockResetGame,
       loadState: mockLoadState,
       updateAchievements: jest.fn(),
+      updateMiniGames: jest.fn(),
+      updateInventory: jest.fn(),
+      spendEnergy: jest.fn(),
+      addXp: jest.fn(),
+    });
+
+    (useInventory as jest.Mock).mockReturnValue({
+      inventory: {
+        coins: 0,
+        items: [],
+        equipped: { hat: null, accessory: null, background: null },
+      },
+      addItem: jest.fn(),
+      addManyCoins: jest.fn(),
+      loadInventory: jest.fn(),
+      resetInventory: jest.fn(),
     });
 
     (usePersistence as jest.Mock).mockReturnValue({

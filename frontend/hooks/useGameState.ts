@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, ActionType, Message } from '@/types/game';
 import { AchievementState } from '@/types/achievement';
 import { PersonalityData } from '@/types/personality';
+import { MiniGameState } from '@/types/miniGame';
+import { PlayerInventory } from '@/types/item';
 import { getInitialState, processAction, getIntelligenceTier, applyPassiveDecay } from '@/lib/gameEngine';
 import { generateResponse } from '@/lib/responseEngine';
 import { GAME_CONSTANTS } from '@/lib/constants';
@@ -145,6 +147,60 @@ export function useGameState(initialState?: GameState) {
     }));
   }, []);
 
+  // ミニゲーム状態を更新（永続化用）
+  const updateMiniGames = useCallback((miniGames: MiniGameState) => {
+    setState(prevState => ({
+      ...prevState,
+      miniGames,
+    }));
+  }, []);
+
+  // インベントリを更新（永続化用）
+  const updateInventory = useCallback((inventory: PlayerInventory) => {
+    setState(prevState => ({
+      ...prevState,
+      inventory,
+    }));
+  }, []);
+
+  // エネルギーを消費
+  const spendEnergy = useCallback((amount: number) => {
+    setState(prevState => ({
+      ...prevState,
+      parameters: {
+        ...prevState.parameters,
+        energy: Math.max(0, prevState.parameters.energy - amount),
+      },
+    }));
+  }, []);
+
+  // XPを追加
+  const addXp = useCallback((amount: number) => {
+    setState(prevState => {
+      const newXp = prevState.parameters.xp + amount;
+      const xpToNextLevel = prevState.parameters.level * 100;
+
+      if (newXp >= xpToNextLevel) {
+        return {
+          ...prevState,
+          parameters: {
+            ...prevState.parameters,
+            xp: newXp - xpToNextLevel,
+            level: prevState.parameters.level + 1,
+          },
+        };
+      }
+
+      return {
+        ...prevState,
+        parameters: {
+          ...prevState.parameters,
+          xp: newXp,
+        },
+      };
+    });
+  }, []);
+
   return {
     state,
     handleAction,
@@ -153,5 +209,9 @@ export function useGameState(initialState?: GameState) {
     loadState,
     updateAchievements,
     updatePersonality,
+    updateMiniGames,
+    updateInventory,
+    spendEnergy,
+    addXp,
   };
 }

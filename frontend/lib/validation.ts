@@ -1,9 +1,13 @@
 import { GameState, RestLimitState } from '@/types/game';
 import { AchievementState } from '@/types/achievement';
 import { PersonalityData } from '@/types/personality';
+import { MiniGameState } from '@/types/miniGame';
+import { PlayerInventory } from '@/types/item';
 import { getTodayDateString } from './gameEngine';
 import { getInitialAchievementState } from './achievementEngine';
 import { getInitialPersonalityData } from './personalityEngine';
+import { getInitialMiniGameState } from './miniGameDefinitions';
+import { getInitialInventory } from './itemDefinitions';
 
 /**
  * ユーザー入力をサニタイズしてXSS攻撃を防ぐ
@@ -79,6 +83,31 @@ function isValidPersonalityData(personality: unknown): personality is Personalit
   );
 }
 
+// 有効なMiniGameStateかどうかをチェック
+function isValidMiniGameState(miniGames: unknown): miniGames is MiniGameState {
+  if (!miniGames || typeof miniGames !== 'object') return false;
+  const mg = miniGames as Partial<MiniGameState>;
+  return (
+    mg.scores !== undefined &&
+    typeof mg.scores === 'object' &&
+    mg.lastPlayedAt !== undefined &&
+    typeof mg.lastPlayedAt === 'object'
+  );
+}
+
+// 有効なPlayerInventoryかどうかをチェック
+function isValidInventory(inventory: unknown): inventory is PlayerInventory {
+  if (!inventory || typeof inventory !== 'object') return false;
+  const inv = inventory as Partial<PlayerInventory>;
+  return (
+    typeof inv.coins === 'number' &&
+    inv.coins >= 0 &&
+    Array.isArray(inv.items) &&
+    inv.equipped !== undefined &&
+    typeof inv.equipped === 'object'
+  );
+}
+
 // 既存データのマイグレーション（restLimitがない場合に追加）
 export function migrateGameState(data: unknown): GameState | null {
   if (!data || typeof data !== 'object') return null;
@@ -118,6 +147,16 @@ export function migrateGameState(data: unknown): GameState | null {
     ? state.personality
     : getInitialPersonalityData();
 
+  // miniGamesがない場合はデフォルト値で補完
+  const miniGames: MiniGameState = isValidMiniGameState(state.miniGames)
+    ? state.miniGames
+    : getInitialMiniGameState();
+
+  // inventoryがない場合はデフォルト値で補完
+  const inventory: PlayerInventory = isValidInventory(state.inventory)
+    ? state.inventory
+    : getInitialInventory();
+
   return {
     parameters: state.parameters,
     messages: state.messages,
@@ -127,6 +166,8 @@ export function migrateGameState(data: unknown): GameState | null {
     restLimit,
     achievements,
     personality,
+    miniGames,
+    inventory,
   };
 }
 

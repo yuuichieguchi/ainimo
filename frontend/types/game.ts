@@ -1,5 +1,7 @@
 import { AchievementState } from './achievement';
 import { PersonalityData } from './personality';
+import { MiniGameState } from './miniGame';
+import { PlayerInventory } from './item';
 
 export type ActionType = 'talk' | 'study' | 'play' | 'rest';
 
@@ -39,6 +41,8 @@ export interface GameState {
   restLimit: RestLimitState;
   achievements?: AchievementState;
   personality?: PersonalityData;
+  miniGames?: MiniGameState;
+  inventory?: PlayerInventory;
 }
 
 export interface ActionEffect {
