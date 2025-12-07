@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { usePersistence } from '@/hooks/usePersistence';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -12,6 +12,7 @@ import { t } from '@/lib/i18n';
 import { ActionType, IntelligenceTier } from '@/types/game';
 import { getIntelligenceTier, canPerformAction, getRemainingRestCount } from '@/lib/gameEngine';
 import { ACTION_EFFECTS, GAME_CONSTANTS } from '@/lib/constants';
+import { computePersonalityState, getInitialPersonalityData } from '@/lib/personalityEngine';
 import { AinimoPet } from './AinimoPet';
 import { StatusPanel } from './StatusPanel';
 import { ChatLog } from './ChatLog';
@@ -19,6 +20,7 @@ import { ActionButtons } from './ActionButtons';
 import { LevelUpNotification } from './LevelUpNotification';
 import { AchievementModal } from './AchievementModal';
 import { AchievementNotification } from './AchievementNotification';
+import { PersonalityBadge } from './PersonalityBadge';
 import { EnvironmentLayer, FloatingValues } from './effects';
 
 export function GameContainer() {
@@ -83,6 +85,13 @@ export function GameContainer() {
   const [chatInput, setChatInput] = useState('');
   const petRef = useRef<HTMLDivElement>(null);
   const statusPanelRef = useRef<HTMLDivElement>(null);
+
+  // 性格状態を計算（メモ化）
+  const personalityData = state.personality || getInitialPersonalityData();
+  const personalityState = useMemo(
+    () => computePersonalityState(personalityData),
+    [personalityData]
+  );
 
   // 成長検出
   useEffect(() => {
@@ -245,6 +254,8 @@ export function GameContainer() {
               currentActivity={state.currentActivity}
               previousTier={previousTier}
               onInteraction={handlePetInteraction}
+              personalityType={personalityState.type}
+              personalityStrength={personalityState.strength}
             />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
@@ -291,6 +302,13 @@ export function GameContainer() {
               />
               <FloatingValues values={floatingValues} />
             </div>
+
+            {/* 性格バッジ */}
+            <PersonalityBadge
+              personalityState={personalityState}
+              totalActions={personalityData.totalActions}
+              language={language}
+            />
 
             {/* 実績ボタン */}
             <button

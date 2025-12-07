@@ -75,6 +75,10 @@ jest.mock('@/components/AchievementNotification', () => ({
   AchievementNotification: () => <div>Mock AchievementNotification</div>
 }));
 
+jest.mock('@/components/PersonalityBadge', () => ({
+  PersonalityBadge: () => <div data-testid="personality-badge">Mock PersonalityBadge</div>
+}));
+
 describe('GameContainer - Mobile Auto Scroll Feature', () => {
   const mockHandleAction = jest.fn();
   const mockHandleChat = jest.fn();

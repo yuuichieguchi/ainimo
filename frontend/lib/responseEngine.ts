@@ -1,7 +1,9 @@
 import { IntelligenceTier, Message } from '@/types/game';
+import { PersonalityState, PersonalityType } from '@/types/personality';
 import { KeywordMatch } from '@/types/responses';
 import { Language } from '@/hooks/useLanguage';
 import { getResponseTemplates } from './responseTemplates';
+import { PERSONALITY_CONVERSATION_STYLES } from './personalityDefinitions';
 
 export function detectKeywords(input: string, language: Language = 'en'): KeywordMatch[] {
   const lowercaseInput = input.toLowerCase();
@@ -84,18 +86,83 @@ export function applyMoodModifier(response: string, mood: number): string {
   return response;
 }
 
+/**
+ * Apply personality-based conversation style modifications
+ * Adds characteristic expressions, prefixes, or suffixes based on personality type
+ */
+export function applyPersonalityStyle(
+  response: string,
+  personalityType: PersonalityType,
+  strength: number,
+  language: Language
+): string {
+  // Don't modify if personality is not developed or strength is too low
+  if (personalityType === 'none' || strength < 30) {
+    return response;
+  }
+
+  const style = PERSONALITY_CONVERSATION_STYLES[personalityType];
+  if (!style) return response;
+
+  // Probability of applying style increases with strength
+  const applyProbability = strength / 100;
+
+  // Randomly decide whether to add prefix (scales with strength)
+  if (Math.random() < applyProbability * 0.4 && style.prefixes[language].length > 0) {
+    const prefixes = style.prefixes[language].filter(p => p.length > 0);
+    if (prefixes.length > 0) {
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      response = `${prefix} ${response}`;
+    }
+  }
+
+  // Randomly decide whether to add suffix (scales with strength)
+  if (Math.random() < applyProbability * 0.3 && style.suffixes[language].length > 0) {
+    const suffixes = style.suffixes[language].filter(s => s.length > 0);
+    if (suffixes.length > 0) {
+      const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+      // Don't add suffix if response already ends with punctuation from suffix
+      if (!response.endsWith(suffix.charAt(suffix.length - 1))) {
+        response = `${response} ${suffix}`;
+      }
+    }
+  }
+
+  // Occasionally add characteristic expression (rare, high strength only)
+  if (Math.random() < applyProbability * 0.15 && strength >= 60 && style.expressions[language].length > 0) {
+    const expressions = style.expressions[language].filter(e => e.length > 0);
+    if (expressions.length > 0) {
+      const expression = expressions[Math.floor(Math.random() * expressions.length)];
+      response = `${expression} ${response}`;
+    }
+  }
+
+  return response;
+}
+
 export function generateResponse(
   userInput: string,
   tier: IntelligenceTier,
   mood: number,
   memory: number,
   recentMessages?: Message[],
-  language: Language = 'en'
+  language: Language = 'en',
+  personalityState?: PersonalityState
 ): string {
   const keywords = detectKeywords(userInput, language);
   let response = selectTemplate(tier, keywords, memory, language);
 
   response = applyMoodModifier(response, mood);
+
+  // Apply personality style if personality state is provided
+  if (personalityState && personalityState.type !== 'none') {
+    response = applyPersonalityStyle(
+      response,
+      personalityState.type,
+      personalityState.strength,
+      language
+    );
+  }
 
   if (tier === 'adult' && recentMessages && recentMessages.length > 0) {
     const userMessages = recentMessages.filter((m) => m.speaker === 'user');

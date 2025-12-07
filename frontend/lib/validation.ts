@@ -1,7 +1,9 @@
 import { GameState, RestLimitState } from '@/types/game';
 import { AchievementState } from '@/types/achievement';
+import { PersonalityData } from '@/types/personality';
 import { getTodayDateString } from './gameEngine';
 import { getInitialAchievementState } from './achievementEngine';
+import { getInitialPersonalityData } from './personalityEngine';
 
 /**
  * ユーザー入力をサニタイズしてXSS攻撃を防ぐ
@@ -60,6 +62,23 @@ function isValidAchievementState(achievements: unknown): achievements is Achieve
   );
 }
 
+// 有効なPersonalityDataかどうかをチェック
+function isValidPersonalityData(personality: unknown): personality is PersonalityData {
+  if (!personality || typeof personality !== 'object') return false;
+  const p = personality as Partial<PersonalityData>;
+  return (
+    p.affinityPoints !== undefined &&
+    typeof p.affinityPoints === 'object' &&
+    typeof p.affinityPoints.scholar === 'number' &&
+    typeof p.affinityPoints.social === 'number' &&
+    typeof p.affinityPoints.playful === 'number' &&
+    typeof p.affinityPoints.zen === 'number' &&
+    typeof p.totalActions === 'number' &&
+    (p.lockedType === null || p.lockedType === undefined || typeof p.lockedType === 'string') &&
+    (p.lockedAt === null || p.lockedAt === undefined || typeof p.lockedAt === 'number')
+  );
+}
+
 // 既存データのマイグレーション（restLimitがない場合に追加）
 export function migrateGameState(data: unknown): GameState | null {
   if (!data || typeof data !== 'object') return null;
@@ -94,6 +113,11 @@ export function migrateGameState(data: unknown): GameState | null {
     ? state.achievements
     : getInitialAchievementState();
 
+  // personalityがない場合はデフォルト値で補完
+  const personality: PersonalityData = isValidPersonalityData(state.personality)
+    ? state.personality
+    : getInitialPersonalityData();
+
   return {
     parameters: state.parameters,
     messages: state.messages,
@@ -102,6 +126,7 @@ export function migrateGameState(data: unknown): GameState | null {
     currentActivity: state.currentActivity,
     restLimit,
     achievements,
+    personality,
   };
 }
 

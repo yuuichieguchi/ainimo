@@ -1,6 +1,8 @@
 import { GameState, GameParameters, ActionType, IntelligenceTier, MoodType, RestLimitState } from '@/types/game';
+import { PersonalityState } from '@/types/personality';
 import { GAME_CONSTANTS, ACTION_EFFECTS, INTELLIGENCE_THRESHOLDS } from './constants';
 import { getInitialAchievementState } from './achievementEngine';
+import { getInitialPersonalityData, applyPersonalityModifier } from './personalityEngine';
 
 // 今日の日付をYYYY-MM-DD形式で取得（ローカルタイム基準）
 export function getTodayDateString(): string {
@@ -30,6 +32,7 @@ export function getInitialState(): GameState {
       lastResetDate: getTodayDateString(),
     },
     achievements: getInitialAchievementState(),
+    personality: getInitialPersonalityData(),
   };
 }
 
@@ -75,10 +78,29 @@ export function getMoodType(mood: number): MoodType {
 
 export function updateParameters(
   current: GameParameters,
-  action: ActionType
+  action: ActionType,
+  personalityState?: PersonalityState
 ): GameParameters {
   const effects = ACTION_EFFECTS[action];
-  const xpGain = calculateXpGain(action, current.intelligence);
+
+  // Apply personality modifiers if personality state is provided
+  let intelligenceGain = effects.intelligence;
+  let memoryGain = effects.memory;
+  let friendlinessGain = effects.friendliness;
+  let energyGain = effects.energy;
+  let xpGain = calculateXpGain(action, current.intelligence);
+
+  if (personalityState && personalityState.type !== 'none') {
+    const { modifiers, strength } = personalityState;
+    intelligenceGain = applyPersonalityModifier(intelligenceGain, modifiers.intelligence, strength);
+    memoryGain = applyPersonalityModifier(memoryGain, modifiers.memory, strength);
+    friendlinessGain = applyPersonalityModifier(friendlinessGain, modifiers.friendliness, strength);
+    xpGain = Math.round(applyPersonalityModifier(xpGain, modifiers.xp, strength));
+    // Energy modifier only applies to rest action
+    if (action === 'rest') {
+      energyGain = applyPersonalityModifier(energyGain, modifiers.energy, strength);
+    }
+  }
 
   const newXp = current.xp + xpGain;
   const { level, xp } = checkLevelUp(newXp, current.level);
@@ -86,10 +108,10 @@ export function updateParameters(
   const updated: GameParameters = {
     level,
     xp,
-    intelligence: clampStat(current.intelligence + effects.intelligence),
-    memory: clampStat(current.memory + effects.memory),
-    friendliness: clampStat(current.friendliness + effects.friendliness),
-    energy: clampStat(current.energy + effects.energy),
+    intelligence: clampStat(current.intelligence + Math.round(intelligenceGain)),
+    memory: clampStat(current.memory + Math.round(memoryGain)),
+    friendliness: clampStat(current.friendliness + Math.round(friendlinessGain)),
+    energy: clampStat(current.energy + Math.round(energyGain)),
     mood: current.mood,
   };
 
@@ -134,13 +156,14 @@ export function canPerformAction(
 
 export function processAction(
   state: GameState,
-  action: ActionType
+  action: ActionType,
+  personalityState?: PersonalityState
 ): GameState {
   if (!canPerformAction(state.parameters, action, state.restLimit)) {
     return state;
   }
 
-  const newParameters = updateParameters(state.parameters, action);
+  const newParameters = updateParameters(state.parameters, action, personalityState);
 
   // 休憩の場合は restLimit を更新
   const newRestLimit = action === 'rest'

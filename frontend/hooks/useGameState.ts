@@ -3,10 +3,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, ActionType, Message } from '@/types/game';
 import { AchievementState } from '@/types/achievement';
+import { PersonalityData } from '@/types/personality';
 import { getInitialState, processAction, getIntelligenceTier, applyPassiveDecay } from '@/lib/gameEngine';
 import { generateResponse } from '@/lib/responseEngine';
 import { GAME_CONSTANTS } from '@/lib/constants';
 import { sanitizeUserInput } from '@/lib/validation';
+import {
+  processPersonalityAction,
+  computePersonalityState,
+  getInitialPersonalityData,
+} from '@/lib/personalityEngine';
 import { Language } from './useLanguage';
 
 export function useGameState(initialState?: GameState) {
@@ -34,22 +40,41 @@ export function useGameState(initialState?: GameState) {
   const handleAction = useCallback((action: ActionType) => {
     setState((prevState) => {
       const decayedState = applyPassiveDecay(prevState);
-      const newState = processAction(decayedState, action);
+
+      // 性格データを更新
+      const currentPersonality = decayedState.personality || getInitialPersonalityData();
+      const newPersonalityData = processPersonalityAction(currentPersonality, action);
+      const personalityState = computePersonalityState(newPersonalityData);
+
+      // 性格状態を適用してアクションを処理
+      const newState = processAction(decayedState, action, personalityState);
 
       // アクションが実行された場合のみcurrentActivityをセット
       const actionExecuted = newState !== decayedState;
 
       if (actionExecuted && (action === 'study' || action === 'play' || action === 'rest')) {
-        return { ...newState, currentActivity: action };
+        return {
+          ...newState,
+          currentActivity: action,
+          personality: newPersonalityData,
+        };
       }
 
-      return newState;
+      return {
+        ...newState,
+        personality: newPersonalityData,
+      };
     });
   }, []);
 
   const handleChat = useCallback((userInput: string, language: Language) => {
     setState((prevState) => {
       const decayedState = applyPassiveDecay(prevState);
+
+      // 性格データを更新 (talk action)
+      const currentPersonality = decayedState.personality || getInitialPersonalityData();
+      const newPersonalityData = processPersonalityAction(currentPersonality, 'talk');
+      const personalityState = computePersonalityState(newPersonalityData);
 
       const sanitizedInput = sanitizeUserInput(userInput);
 
@@ -69,7 +94,8 @@ export function useGameState(initialState?: GameState) {
         decayedState.parameters.mood,
         decayedState.parameters.memory,
         recentMessages,
-        language
+        language,
+        personalityState
       );
 
       const ainimoMessage: Message = {
@@ -85,11 +111,12 @@ export function useGameState(initialState?: GameState) {
           ? updatedMessages.slice(-GAME_CONSTANTS.MAX_MESSAGES)
           : updatedMessages;
 
-      const talkState = processAction(decayedState, 'talk');
+      const talkState = processAction(decayedState, 'talk', personalityState);
 
       return {
         ...talkState,
         messages: trimmedMessages,
+        personality: newPersonalityData,
       };
     });
   }, []);
@@ -110,6 +137,14 @@ export function useGameState(initialState?: GameState) {
     }));
   }, []);
 
+  // 性格データを更新（永続化用）
+  const updatePersonality = useCallback((personality: PersonalityData) => {
+    setState(prevState => ({
+      ...prevState,
+      personality,
+    }));
+  }, []);
+
   return {
     state,
     handleAction,
@@ -117,5 +152,6 @@ export function useGameState(initialState?: GameState) {
     resetGame,
     loadState,
     updateAchievements,
+    updatePersonality,
   };
 }

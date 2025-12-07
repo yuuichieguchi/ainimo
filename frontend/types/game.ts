@@ -1,4 +1,5 @@
 import { AchievementState } from './achievement';
+import { PersonalityData } from './personality';
 
 export type ActionType = 'talk' | 'study' | 'play' | 'rest';
 
@@ -37,6 +38,7 @@ export interface GameState {
   currentActivity?: ActionType | null;
   restLimit: RestLimitState;
   achievements?: AchievementState;
+  personality?: PersonalityData;
 }
 
 export interface ActionEffect {

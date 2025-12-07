@@ -2,9 +2,11 @@
 
 import { forwardRef, useEffect, useRef, useCallback, useState } from 'react';
 import { GameParameters, ActionType, IntelligenceTier } from '@/types/game';
+import { PersonalityType } from '@/types/personality';
 import { getMoodType, getIntelligenceTier } from '@/lib/gameEngine';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
+import { PERSONALITY_VISUALS } from '@/lib/personalityDefinitions';
 import {
   useParticles,
   useInteraction,
@@ -20,6 +22,8 @@ interface AinimoPetProps {
   currentActivity?: ActionType | null;
   previousTier?: IntelligenceTier | null;
   onInteraction?: (type: 'tap' | 'pet') => void;
+  personalityType?: PersonalityType;
+  personalityStrength?: number;
 }
 
 const IMAGE_PATHS: Record<IntelligenceTier, string> = {
@@ -30,7 +34,7 @@ const IMAGE_PATHS: Record<IntelligenceTier, string> = {
 };
 
 export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
-  ({ parameters, language, currentActivity, previousTier, onInteraction }, ref) => {
+  ({ parameters, language, currentActivity, previousTier, onInteraction, personalityType, personalityStrength = 0 }, ref) => {
     const mood = getMoodType(parameters.mood);
     const tier = getIntelligenceTier(parameters.intelligence);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -193,6 +197,42 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
       transition: 'transform 0.15s ease-out',
     };
 
+    // 性格エフェクトのスタイル
+    const getPersonalityAuraStyle = () => {
+      if (!personalityType || personalityType === 'none' || personalityStrength < 30) {
+        return {};
+      }
+
+      const visuals = PERSONALITY_VISUALS[personalityType];
+      const intensityFactor = personalityStrength / 100;
+
+      return {
+        boxShadow: `0 0 ${Math.round(20 * intensityFactor)}px ${visuals.auraColor}, 0 0 ${Math.round(40 * intensityFactor)}px ${visuals.auraColor}`,
+      };
+    };
+
+    // 性格によるフィルター効果
+    const getPersonalityFilterStyle = (): React.CSSProperties => {
+      if (!personalityType || personalityType === 'none' || personalityStrength < 30) {
+        return filterObject;
+      }
+
+      const visuals = PERSONALITY_VISUALS[personalityType];
+      // 既存のmoodフィルターと性格フィルターを組み合わせる
+      const moodFilterStr = filterObject.filter || '';
+      const personalityFilter = visuals.filter || '';
+
+      if (personalityFilter === 'none') {
+        return filterObject;
+      }
+
+      // 性格フィルターの強度を性格強度で調整
+      return {
+        ...filterObject,
+        filter: moodFilterStr ? `${moodFilterStr} ${personalityFilter}` : personalityFilter,
+      };
+    };
+
     return (
       <div
         ref={ref}
@@ -208,6 +248,7 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
         <div
           ref={containerRef}
           className={`relative w-32 h-32 select-none touch-none ${getAnimationClass()}`}
+          style={getPersonalityAuraStyle()}
           {...handlers}
         >
           {/* ペット画像 */}
@@ -216,7 +257,7 @@ export const AinimoPet = forwardRef<HTMLDivElement, AinimoPetProps>(
               src={getImagePath()}
               alt={`Ainimo ${getTierLabel()}`}
               className="w-full h-full object-contain dark:[filter:drop-shadow(0_0_2px_rgba(0,0,0,1))_drop-shadow(0_0_4px_rgba(0,0,0,0.8))]"
-              style={filterObject}
+              style={getPersonalityFilterStyle()}
               draggable={false}
               onError={(e) => {
                 e.currentTarget.src = IMAGE_PATHS.baby;
