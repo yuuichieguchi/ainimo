@@ -1,5 +1,12 @@
 import { GameState } from '@/types/game';
-import { isValidGameState, migrateGameState } from './validation';
+import { migrateGameState } from './validation';
+import {
+  encrypt,
+  decrypt,
+  isEncryptionEnabled,
+  isPlainTextData,
+  isEncryptedPayload,
+} from './crypto';
 
 const STORAGE_KEY = 'ainimo_save';
 
@@ -13,7 +20,13 @@ class LocalStorageAdapter implements StorageAdapter {
   async save(key: string, data: GameState): Promise<void> {
     try {
       const serialized = JSON.stringify(data);
-      localStorage.setItem(key, serialized);
+
+      if (isEncryptionEnabled()) {
+        const encrypted = await encrypt(serialized);
+        localStorage.setItem(key, JSON.stringify(encrypted));
+      } else {
+        localStorage.setItem(key, serialized);
+      }
     } catch (error) {
       console.error('Failed to save to localStorage:', error);
       throw new Error('Storage save failed');
@@ -22,11 +35,47 @@ class LocalStorageAdapter implements StorageAdapter {
 
   async load(key: string): Promise<GameState | null> {
     try {
-      const serialized = localStorage.getItem(key);
-      if (!serialized) return null;
-      const parsed = JSON.parse(serialized);
+      const stored = localStorage.getItem(key);
+      if (!stored) return null;
+
+      let gameStateData: unknown;
+
+      // 平文データかどうかを判定
+      if (isPlainTextData(stored)) {
+        // 平文データの場合はそのままパース
+        gameStateData = JSON.parse(stored);
+
+        // マイグレーション: 暗号化が有効なら暗号化して再保存
+        if (isEncryptionEnabled()) {
+          const migrated = migrateGameState(gameStateData);
+          if (migrated) {
+            await this.save(key, migrated);
+          }
+        }
+      } else {
+        // 暗号化データの場合
+        const parsed = JSON.parse(stored);
+
+        if (isEncryptedPayload(parsed)) {
+          try {
+            const decrypted = await decrypt(parsed);
+            gameStateData = JSON.parse(decrypted);
+          } catch (error) {
+            // 復号失敗（改ざんの可能性）→ データを削除
+            console.error('Decryption failed, data may have been tampered with:', error);
+            localStorage.removeItem(key);
+            return null;
+          }
+        } else {
+          // 不明な形式 → データを削除
+          console.error('Unknown data format in storage');
+          localStorage.removeItem(key);
+          return null;
+        }
+      }
+
       // マイグレーションを適用して既存データに対応
-      return migrateGameState(parsed);
+      return migrateGameState(gameStateData);
     } catch (error) {
       console.error('Failed to load from localStorage:', error);
       return null;
@@ -65,10 +114,19 @@ class IndexedDBAdapter implements StorageAdapter {
 
   async save(key: string, data: GameState): Promise<void> {
     try {
+      const serialized = JSON.stringify(data);
+
+      let dataToStore: string | object;
+      if (isEncryptionEnabled()) {
+        dataToStore = await encrypt(serialized);
+      } else {
+        dataToStore = data;
+      }
+
       const db = await this.getDB();
       const transaction = db.transaction([this.storeName], 'readwrite');
       const store = transaction.objectStore(this.storeName);
-      store.put(data, key);
+      store.put(dataToStore, key);
 
       return new Promise((resolve, reject) => {
         transaction.oncomplete = () => resolve();
@@ -88,10 +146,48 @@ class IndexedDBAdapter implements StorageAdapter {
       const request = store.get(key);
 
       return new Promise((resolve, reject) => {
-        request.onsuccess = () => {
+        request.onsuccess = async () => {
           const result = request.result;
+          if (!result) {
+            resolve(null);
+            return;
+          }
+
+          let gameStateData: unknown;
+
+          // 暗号化データかどうかを判定
+          if (isEncryptedPayload(result)) {
+            try {
+              const decrypted = await decrypt(result);
+              gameStateData = JSON.parse(decrypted);
+            } catch (error) {
+              // 復号失敗（改ざんの可能性）→ データを削除
+              console.error('Decryption failed, data may have been tampered with:', error);
+              await this.clear(key);
+              resolve(null);
+              return;
+            }
+          } else if (result.parameters !== undefined) {
+            // 平文データの場合
+            gameStateData = result;
+
+            // マイグレーション: 暗号化が有効なら暗号化して再保存
+            if (isEncryptionEnabled()) {
+              const migrated = migrateGameState(gameStateData);
+              if (migrated) {
+                await this.save(key, migrated);
+              }
+            }
+          } else {
+            // 不明な形式 → データを削除
+            console.error('Unknown data format in IndexedDB');
+            await this.clear(key);
+            resolve(null);
+            return;
+          }
+
           // マイグレーションを適用して既存データに対応
-          resolve(result ? migrateGameState(result) : null);
+          resolve(migrateGameState(gameStateData));
         };
         request.onerror = () => reject(request.error);
       });
