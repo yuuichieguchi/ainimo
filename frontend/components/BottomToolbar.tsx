@@ -27,7 +27,7 @@ export function BottomToolbar({
   const toolbarItems = [
     {
       id: 'actions',
-      icon: '📚',
+      icon: '🎪',
       label: t('actions', language),
       ariaLabel: t('actions', language),
       onClick: onActionsClick,
@@ -77,7 +77,7 @@ export function BottomToolbar({
               key={item.id}
               onClick={item.onClick}
               aria-label={item.ariaLabel}
-              className={`flex flex-col items-center justify-center gap-1 py-2 rounded-xl transition-all min-h-[60px] ${
+              className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg transition-all ${
                 item.color
                   ? `bg-gradient-to-r ${item.color} ${item.hoverColor} text-white shadow-md`
                   : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
@@ -130,7 +130,7 @@ export function BottomToolbar({
       </div>
 
       {/* モバイル用のスペーサー（固定フッターの高さ分） */}
-      <div className="md:hidden h-20" />
+      <div className="md:hidden h-16" />
     </>
   );
 }

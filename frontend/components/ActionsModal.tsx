@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { ActionType, RestLimitState } from '@/types/game';
 import { Language } from '@/hooks/useLanguage';
 import { t } from '@/lib/i18n';
 import { getRemainingRestCount } from '@/lib/gameEngine';
 import { GAME_CONSTANTS } from '@/lib/constants';
+import { Tooltip } from '@/components/Tooltip';
+import { useTooltip } from '@/hooks/useTooltip';
 
 interface ActionsModalProps {
   isOpen: boolean;
@@ -27,6 +29,7 @@ export function ActionsModal({
   const isLowEnergy = energy < GAME_CONSTANTS.ENERGY_THRESHOLD;
   const remainingRest = getRemainingRestCount(restLimit);
   const isRestDisabled = remainingRest <= 0;
+  const restTooltip = useTooltip({ id: 'rest-modal-tooltip', isMobile: false });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -145,10 +148,22 @@ export function ActionsModal({
                   <div className="text-sm opacity-80">{description}</div>
                 </div>
                 {action === 'rest' && (
-                  <div className="text-sm opacity-80 text-right whitespace-nowrap">
+                  <div
+                    className="flex items-center gap-1 text-sm opacity-80 text-right whitespace-nowrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {remainingRest > 0
                       ? `${remainingRest}/${GAME_CONSTANTS.MAX_REST_PER_DAY}`
                       : t('noRestRemaining', language)}
+                    <Tooltip
+                      content={t('restLimitTooltip', language)}
+                      isVisible={restTooltip.isVisible}
+                      onMouseEnter={restTooltip.handleMouseEnter}
+                      onMouseLeave={restTooltip.handleMouseLeave}
+                      onClick={restTooltip.handleClick}
+                    >
+                      <span className="text-white/80 text-sm cursor-help">ⓘ</span>
+                    </Tooltip>
                   </div>
                 )}
               </button>
